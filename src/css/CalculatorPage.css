@@ -1,0 +1,86 @@
+/* src/css/CalculatorPage.css */
+
+.calculator-page h1 {
+  text-align: center;
+}
+.calculator-page p {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto 2rem auto;
+  color: var(--color-text-secondary);
+}
+
+.calculator-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  max-width: 800px;
+  margin: 0 auto 3rem auto;
+  padding: 2rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.results-container {
+  margin-top: 3rem;
+  width: 100%;
+}
+
+.results-container h2,
+.profit-loss-section h3 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: var(--color-text-primary);
+}
+
+.profit-loss-section {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+.indicator-card span {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-top: -0.5rem;
+  display: block;
+}
+
+.text-success {
+  color: var(--color-success) !important;
+}
+
+.text-danger {
+  color: var(--color-danger) !important;
+}
+
+.profit-loss-section.profit .indicator-card::before {
+  background-color: var(--color-success);
+}
+
+.profit-loss-section.loss .indicator-card::before {
+  background-color: var(--color-danger);
+}
+
+.indicator-card.rr-good::before {
+  background-color: var(--color-success);
+}
+.indicator-card.rr-ok::before {
+  background-color: #f59e0b; /* สีส้ม/เหลือง สำหรับค่าที่พอใช้ */
+}
+.indicator-card.rr-bad::before {
+  background-color: var(--color-danger);
+}

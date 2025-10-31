@@ -1,0 +1,130 @@
+/* src/App.css */
+
+/* --- 1. CSS Reset / Normalize --- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* --- 2. Dark Theme Variables --- */
+:root {
+  --color-bg: #181c24;           /* พื้นหลังหลัก */
+  --color-bg-secondary: #232a36; /* พื้นหลังรอง */
+  --color-surface: #232a36;      /* กล่อง/พื้นหลังเนื้อหา */
+  --color-border: #232a36;
+  --color-shadow: 0 6px 24px rgba(0,0,0,0.45);
+  --color-text: #f7f7fa;         /* ตัวอักษรหลัก */
+  --color-text-secondary: #bfc9d1;
+  --color-primary: #7c4dff;      /* สีหลัก (ม่วง) */
+  --color-primary-hover: #a084ff;
+  --color-accent: #f7ca18;       /* สีเน้น (ทอง) */
+  --color-link: #7c4dff;
+  --color-link-hover: #f7ca18;
+  --color-btn-bg: #232a36;
+  --color-btn-bg-hover: #353f4e;
+  --color-btn-text: #f7ca18;
+  --color-macd-line: #00bcd4;  /* สีฟ้า Cyan */
+  --color-signal-line: #ff7300; /* สีส้ม */
+}
+
+/* --- 3. Global HTML/Body/Root Element Styles --- */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  min-height: 100vh;
+  --color-macd-line: #80deea;  /* สีฟ้า Cyan อ่อนลง */
+  --color-signal-line: #ffab40; /* สีส้มอ่อนลง */
+}
+
+body {
+  font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- 4. Layout สำหรับ React App (#root) --- */
+#root {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* --- 5. Page Container Style --- */
+.page-container {
+  max-width: auto;
+  width: auto;
+  margin-top: clamp(20px, 5vh, 50px);
+  margin-bottom: clamp(20px, 5vh, 50px);
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: clamp(30px, 5vw, 60px);
+  background-color: var(--color-surface);
+  border-radius: 14px;
+  box-shadow: var(--color-shadow);
+  box-sizing: border-box;
+  border: 1.5px solid var(--color-border);
+}
+
+/* --- 6. Global Link Styles --- */
+a {
+  text-decoration: none;
+  color: var(--color-link);
+  transition: color 0.3s;
+}
+
+a:hover {
+  color: var(--color-link-hover);
+  text-decoration: underline;
+}
+
+/* --- 7. Base Button Styles --- */
+button {
+  padding: 12px 25px;
+  font-size: 1.1em;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--color-btn-bg);
+  color: var(--color-btn-text);
+  transition: background 0.3s, color 0.2s, transform 0.2s;
+  box-shadow: 0 2px 8px rgba(40,62,81,0.18);
+  font-weight: 600;
+}
+
+button:hover {
+  background: var(--color-btn-bg-hover);
+  color: var(--color-accent);
+  transform: translateY(-2px) scale(1.03);
+}
+
+.primary-button {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.primary-button:hover {
+  background: var(--color-primary-hover);
+  color: var(--color-accent);
+}
+
+/* --- 8. Responsive Adjustments for Font Sizes --- */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 13px;
+  }
+}

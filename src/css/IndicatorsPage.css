@@ -1,0 +1,271 @@
+/* src/css/IndicatorsPage.css */
+
+/* --- Form Styles --- */
+.indicator-form {
+  display: flex;
+  flex-direction: column; /* 1. เริ่มต้นด้วยแนวตั้งสำหรับจอเล็ก */
+  gap: 1.25rem; /* เพิ่มระยะห่างระหว่างแถว */
+  max-width: 500px;
+  width: 100%;
+  margin: 2rem auto 3rem auto;
+  padding: 1.5rem;
+  background-color: var(--color-surface);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: auto; /* บนจอเล็ก ให้แต่ละกลุ่มกว้างเต็ม */
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  padding-left: 0.25rem;
+}
+
+.indicator-form .primary-button {
+    flex-shrink: 0; /* ป้องกันปุ่มถูกบีบ */
+    margin-top: 0; /* เอาระยะห่างด้านบนออก */
+}
+
+.days-input-wrapper {
+  /* เพิ่มส่วนนี้เพื่อให้ wrapper ของ days input ไม่ขยายเต็ม */
+  flex-grow: 0;
+}
+
+.days-input {
+  width: 80px;
+  flex-grow: 0;
+}
+
+.indicator-form .primary-button {
+  flex-shrink: 0;
+   margin: auto;
+}
+
+/* --- Media Queries for Larger Screens (768px ขึ้นไป) --- */
+@media (min-width: 768px) {
+  /* เมื่อหน้าจอกว้างขึ้น ให้เปลี่ยนเป็นแนวนอน */
+  .indicator-form {
+    flex-direction: row; /* 2. เปลี่ยนเป็นแนวนอน */
+    flex-wrap: nowrap; /* ไม่ให้ตัดบรรทัด */
+    align-items: flex-end; /* 3. จัดให้ทุกอย่างชิดขอบล่าง */
+    gap: 1rem; /* ลดระยะห่างสำหรับแนวนอน */
+    max-width: 700px; /* ขยายความกว้างสูงสุด */
+  }
+}
+
+/* --- Custom Number Input Decoration --- */
+.days-input-wrapper {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  margin: auto;
+  flex-grow: 0;
+}
+
+.day-stepper-button {
+  width: 42px;
+  height: 100%;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 1.5rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.day-stepper-button:hover {
+  background-color: var(--color-primary);
+  color: var(--color-text-on-primary);
+  border-color: var(--color-primary);
+}
+
+.day-stepper-button:first-of-type {
+  border-radius: 8px 0 0 8px;
+  border-right: none;
+}
+
+.day-stepper-button:last-of-type {
+  border-radius: 0 8px 8px 0;
+  border-left: none;
+}
+
+.days-input-wrapper .days-input {
+  width: 80px;
+  height: 100%;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  border-left: none;
+  border-right: none;
+}
+.days-input-wrapper .days-input:focus {
+    outline: none;
+}
+.days-input-wrapper .days-input::-webkit-outer-spin-button,
+.days-input-wrapper .days-input::-webkit-inner-spin-button {
+  -webkit-appearance: none; /* Chrome, Safari, Edge */
+  margin: 0;
+}
+
+
+/* --- Results & Animation --- */
+.charts-group, .indicators-results-container {
+  animation: fadeIn 0.5s 0.1s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Charts Group --- */
+.charts-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  width: 100%;
+}
+
+.chart-wrapper {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 1.5rem 1rem 1rem 0.5rem;
+  box-shadow: var(--shadow-md);
+  transition: box-shadow 0.3s ease;
+}
+
+.chart-wrapper:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.chart-wrapper h3 {
+  margin: 0 0 1.5rem 1.5rem;
+  color: var(--color-text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 1rem;
+}
+
+/* --- Indicator Cards --- */
+.indicators-results-container {
+  margin-top: 3.5rem;
+}
+
+.indicators-results-container h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 1.5rem;
+}
+
+.indicator-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+}
+
+.indicator-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+.indicator-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background-color: var(--color-secondary);
+}
+.indicator-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+.indicator-card h3 {
+  margin: 0.5rem 0 0.5rem 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+.indicator-value {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.signal-card.rsi-signal::before { background-color: var(--color-rsi-signal); }
+.signal-card.macd-signal::before { background-color: var(--color-macd-signal); }
+
+.signal-card .indicator-value {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+/* --- Back Button --- */
+.back-button {
+  display: block;
+  width: fit-content;
+  margin: 3.5rem auto 1rem auto;
+}
+
+/* --- Chart Controls (vertical sizing & zoom) --- */
+.chart-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  max-width: 900px;
+  width: 100%;
+  margin: 1rem auto 1.5rem auto;
+  padding: 0.75rem 1rem;
+  background-color: var(--color-surface);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+}
+
+.chart-controls .control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 240px;
+  flex: 1 1 260px;
+}
+
+.chart-controls label {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.chart-controls input[type="range"] {
+  width: 100%;
+}
+
+.chart-controls .reset-button {
+  height: 40px;
+}

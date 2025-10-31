@@ -1,0 +1,56 @@
+/* กล่องหลักของ input หุ้น */
+.stockname-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  max-width: 350px;
+  margin: 0 auto;
+  padding: 18px 22px;
+  background: linear-gradient(90deg, #7200de 0%, #94009e 100%);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(40,62,81,0.08);
+  border: 1px solid #f7ca18;
+}
+
+/* label สำหรับ input */
+.stockname-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #283e51;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* input สำหรับชื่อหุ้น */
+.stockname-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 1.1rem;
+  border: 1.5px solid #f7ca18;
+  border-radius: 8px;
+  outline: none;
+  background: #fff;
+  color: #283e51;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 4px rgba(40,62,81,0.04);
+}
+
+.stockname-input:focus {
+  border-color: #ffd700;
+  box-shadow: 0 2px 8px rgba(247,202,24,0.15);
+}
+
+/* Responsive: ปรับขนาดบนจอเล็ก */
+@media (max-width: 480px) {
+  .stockname-container {
+    padding: 12px 8px;
+    max-width: 100%;
+  }
+  .stockname-input {
+    font-size: 1rem;
+    padding: 10px 10px;
+  }
+}

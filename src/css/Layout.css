@@ -1,0 +1,59 @@
+/* src/components/Layout.css */
+.layout-container {
+  display: flex; /* Flexbox สำหรับจัด Sidebar และ Content */
+  width: 100%;
+  min-height: 100vh;
+  /* background-color: #f0f2f5; -- สามารถเอาสีพื้นหลังไปไว้ใน body หรือ root ได้ */
+}
+
+/* พื้นที่เนื้อหาหลัก */
+.layout-content {
+  flex: 1;
+  padding: 2rem; /* Padding รอบเนื้อหาหลัก */
+  transition: margin-left 0.3s;
+  overflow-y: auto; /* ถ้าเนื้อหาเยอะเกิน ก็ให้ Scroll ได้เฉพาะส่วนนี้ */
+  background-color: #444444; /* สีพื้นหลังของพื้นที่เนื้อหา */
+  position: relative; /* สำหรับ overlay */
+}
+
+/* Overlay สำหรับเมื่อ Sidebar เปิดบนมือถือ */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5); /* Dimming effect */
+  z-index: 999; /* อยู่ใต้ Sidebar แต่เหนือเนื้อหาหลัก */
+  display: none; /* ซ่อนไว้ก่อน */
+}
+
+/* เมื่อ Sidebar เปิด: แสดง Overlay (เฉพาะบนมือถือ) และอาจจะผลักเนื้อหาหลัก */
+/* สำหรับ Desktop: Sidebar จะผลักเนื้อหาหลักจริงๆ */
+@media (min-width: 769px) {
+  .layout-container.sidebar-open .layout-content {
+    /* บน Desktop, Sidebar จะอยู่ด้านซ้ายและเนื้อหาจะเลื่อนไปทางขวา */
+    margin-left: 250px; /* เท่าความกว้าง Sidebar */
+    transition: margin-left 0.3s ease-out; /* Animation เมื่อ Sidebar เปิด/ปิด */
+  }
+  .layout-container.sidebar-closed .layout-content {
+    margin-left: 0;
+    transition: margin-left 0.3s ease-out;
+  }
+}
+
+/* สำหรับ Mobile: Sidebar เป็น Overlay */
+@media (max-width: 768px) {
+  .layout-container {
+    flex-direction: column; /* Sidebar อยู่ด้านบน (แต่ถูกซ่อนด้วย position/transform) */
+  }
+
+  /* แสดง Overlay เมื่อ Sidebar เปิดบนมือถือ */
+  .layout-container.sidebar-open .sidebar-overlay {
+    display: block;
+  }
+
+  .layout-content {
+    margin-left: 0;
+  }
+}

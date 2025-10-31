@@ -1,0 +1,208 @@
+/* src/pages/HomePage.css */
+
+/* ปรับ HomePage ให้รองรับธีมมืดและดูสวยงาม */
+
+/* กล่องหลักของหน้า HomePage */
+.page-container {
+    /* *** จุดนี้คือ .page-container ของแต่ละหน้า
+           แต่ใน App.css เราได้กำหนด .page-container Global ไว้แล้ว
+           ควรลบ Style ซ้ำซ้อนที่นี่ออกเพื่อไม่ให้เกิดความขัดแย้ง
+           และใช้ Style จาก App.css เป็นหลัก ***/
+    /* min-height: auto;
+    width: auto;
+    max-width: 100vw;
+    padding: 0;
+    margin: 0;
+    background: var(--color-bg-secondary, #181818);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; */
+
+    /* ควรมีเพียง Style ที่ Overwrite หรือเพิ่มจาก App.css เท่านั้น */
+    background: var(--color-bg-secondary, #181818); /* ถ้าต้องการพื้นหลังเฉพาะหน้านี้ */
+    padding-top: clamp(40px, 10vh, 80px); /* เพิ่ม padding ด้านบนเพื่อให้หัวข้อไม่ชิดขอบ */
+    padding-bottom: clamp(40px, 10vh, 80px); /* เพิ่ม padding ด้านล่าง */
+    /* จัดกึ่งกลางเนื้อหาภายใน .page-container เหมือนเดิม */
+    justify-content: center; /* ตรงกลางแนวตั้ง */
+    align-items: center;     /* ตรงกลางแนวนอน */
+    text-align: center; /* จัด text ในหน้าให้กึ่งกลาง */
+    /* ปรับ gap เพื่อควบคุมระยะห่างระหว่างองค์ประกอบหลักภายใน */
+    gap: 1.5rem; /* ระยะห่างระหว่าง h1, p, input, buttons */
+}
+
+/* หัวข้อหลัก */
+.page-container h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem); /* Responsive font size */
+    margin-bottom: 0.5rem; /* ลด margin เพื่อให้ใกล้กับ p */
+    color: var(--color-accent, #FFD700); /* สีทองเน้น (มี fallback color) */
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.2); /* เพิ่มเงาให้ดูมีมิติขึ้น */
+}
+
+/* ข้อความทั่วไป */
+.page-container p {
+    font-size: clamp(1rem, 2.5vw, 1.2rem); /* Responsive font size */
+    color: var(--color-text-secondary, #BBBBBB); /* สีรองจาก theme (มี fallback color) */
+    line-height: 1.6;
+    margin-bottom: 1.5rem; /* ลด margin */
+    font-weight: 500;
+    max-width: 90%; /* จำกัดความกว้างของข้อความไม่ให้กว้างเกินไปบนจอใหญ่ */
+}
+
+/* --- Style สำหรับ Input Field --- */
+input[type="text"] {
+    width: clamp(250px, 60vw, 400px); /* Responsive width: min 250px, max 400px, ปรับตาม 60% vw */
+    padding: 0.8rem 1rem;
+    font-size: 1.1rem;
+    border: 1px solid var(--color-border, #444444); /* สีขอบตามธีม */
+    border-radius: 8px; /* มุมโค้งมน */
+    background-color: var(--color-bg-tertiary, #2a2a2a); /* สีพื้นหลังของ Input */
+    color: var(--color-text-primary, #FFD700); /* สีข้อความใน Input */
+    outline: none; /* ลบขอบสีฟ้า/ส้มเมื่อ Focus */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease; /* เพิ่ม Transition สำหรับการเปลี่ยนแปลงที่ราบรื่น */
+}
+input[type="text"]:hover {
+    width: clamp(250px, 60vw, 400px); /* Responsive width: min 250px, max 400px, ปรับตาม 60% vw */
+    padding: 0.8rem 1rem;
+    font-size: 1.1rem;
+    border: 1px solid var(--color-border, #444444); /* สีขอบตามธีม */
+    border-radius: 8px; /* มุมโค้งมน */
+    background-color: var(--color-bg-tertiary, #ffd90064); /* สีพื้นหลังของ Input */
+    color: var(--color-text-primary, #FFD700); /* สีข้อความใน Input */
+    outline: none; /* ลบขอบสีฟ้า/ส้มเมื่อ Focus */
+    box-shadow: 0 2px 8px rgba(194, 201, 0, 0.553);
+    transition: all 0.3s ease; /* เพิ่ม Transition สำหรับการเปลี่ยนแปลงที่ราบรื่น */
+}
+input[type="number"] {
+    width: clamp(200px, 60vw, 200px); /* Responsive width: min 250px, max 400px, ปรับตาม 60% vw */
+    padding: 0.8rem 1rem;
+    font-size: 1.1rem;
+    border: 1px solid var(--color-border, #444444); /* สีขอบตามธีม */
+    border-radius: 8px; /* มุมโค้งมน */
+    background-color: var(--color-bg-tertiary, #2a2a2a); /* สีพื้นหลังของ Input */
+    color: var(--color-text-primary, #FFD700); /* สีข้อความใน Input */
+    outline: none; /* ลบขอบสีฟ้า/ส้มเมื่อ Focus */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease; /* เพิ่ม Transition สำหรับการเปลี่ยนแปลงที่ราบรื่น */
+}
+input[type="number"]:hover {
+    width: clamp(200px, 60vw, 200px); /* Responsive width: min 250px, max 400px, ปรับตาม 60% vw */
+    padding: 0.8rem 1rem;
+    font-size: 1.1rem;
+    border: 1px solid var(--color-border, #acacac8c); /* สีขอบตามธีม */
+    border-radius: 8px; /* มุมโค้งมน */
+    background-color: var(--color-bg-tertiary, #ffd9007a); /* สีพื้นหลังของ Input */
+    color: var(--color-text-primary, #ffffff); /* สีข้อความใน Input */
+    outline: none; /* ลบขอบสีฟ้า/ส้มเมื่อ Focus */
+    box-shadow: 0 2px 8px rgba(255, 217, 0, 0.429);
+    transition: all 0.3s ergba(255, 0, 0, 0.1) /*ransition สำหรับการเปลี่ยนแปลงที่ราบรื่น */
+
+}
+
+input[type="text"]::placeholder {
+    color: var(--color-text-tertiary, #888888); /* สี Placeholder */
+    opacity: 0.8; /* ทำให้สีจางลงนิดหน่อย */
+}
+input[type="number"]::placeholder {
+    color: var(--color-text-tertiary, #d1b200); /* สี Placeholder */
+    opacity: 0.8; /* ทำให้สีจางลงนิดหน่อย */
+}
+
+input[type="text"]:focus {
+    border-color: var(--color-accent, #FFD700); /* เปลี่ยนสีขอบเมื่อ Focus */
+    box-shadow: 0 0 0 3px rgba(255,215,0,0.2); /* เพิ่มเงาเรืองแสงเมื่อ Focus */
+    background-color: var(--color-bg-secondary-light, #333333); /* อาจจะสว่างขึ้นนิดหน่อย */
+}
+input[type="number"]:focus {
+    border-color: var(--color-accent, #FFD700); /* เปลี่ยนสีขอบเมื่อ Focus */
+    box-shadow: 0 0 0 3px rgba(255,215,0,0.2); /* เพิ่มเงาเรืองแสงเมื่อ Focus */
+    background-color: var(--color-bg-secondary-light, #333333); /* อาจจะสว่างขึ้นนิดหน่อย */
+}
+
+/* --- Style สำหรับปุ่มหลัก (ถ้ามีใน HomePage) --- */
+/* ถ้าปุ่ม 'คลิกฉัน' อยู่ใน HomePage ก็ใส่ style เพิ่มเติมที่นี่
+   ถ้าคุณใช้ Global button style ใน App.css ก็จะใช้ร่วมกันได้ */
+.page-container button {
+    background-color: var(--color-accent, #FFD700);
+    color: var(--color-bg-secondary, #181818); /* สีข้อความบนปุ่ม */
+    font-weight: bold;
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.page-container button:hover {
+    background-color: #836f00; /* สีเข้มขึ้นเมื่อ hover */
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+/* ส่วนที่รวม component ต่างๆ (ไม่น่าจะใช้ใน HomePage โดยตรงแล้ว) */
+.components-section {
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    border-top: 1px solid var(--color-border, #444444);
+    padding-top: 30px;
+    align-items: center;
+}
+
+/* Container สำหรับผลลัพธ์ */
+.results-container {
+  width: 100%; /* เปลี่ยนจาก 100vw เพื่อให้ปรับตาม parent container */
+  height: 200%;
+  max-width: auto; /* จำกัดความกว้างสูงสุด */
+  padding: 0 1rem; /* ปรับ padding ให้เข้ากับธีม */
+  margin-top: 2rem;
+  box-sizing: border-box; /* สำคัญ */
+  color: var(--color-text-primary, #EEEEEE); /* สีข้อความผลลัพธ์ */
+  font-size: large; /* ขนาดตัวอักษร */
+  font-weight: bold; /* ตัวหนา */
+}
+/* สไตล์สำหรับข้อมูลหุ้นภายใน results-container */
+.results-container h2 {
+    font-size: 1.8rem;
+    color: var(--color-accent, #FFD700);
+    margin-bottom: 0.5rem;
+}
+.results-container p {
+    font-size: 1.1rem;
+    color: var(--color-text-secondary, #BBBBBB);
+    margin-bottom: 0.5rem;
+}
+.results-container p strong {
+    color: var(--color-text-primary, #EEEEEE);
+}
+
+
+/* Container สำหรับกราฟ (ถ้ามี) */
+.chart-container {
+  width: 100%;
+  height: 350px;
+  margin-bottom: 2rem;
+  background-color: var(--color-bg-primary, #222222); /* สีพื้นหลังสำหรับกราฟ */
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* Responsive: ปรับ padding และขนาดบนจอเล็ก */
+@media (max-width: 600px) {
+    .page-container {
+        padding: clamp(20px, 5vw, 40px); /* ปรับ padding โดยใช้ clamp */
+        /* max-width: 98vw; -- ลบออก เพราะ width: 90% ใน App.css จัดการแล้ว */
+    }
+    .components-section {
+        padding-top: 18px;
+    }
+    .results-container {
+        padding: 0 15px; /* ลด padding ด้านข้างสำหรับจอเล็ก */
+    }
+    
+}
