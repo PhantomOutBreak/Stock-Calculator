@@ -5,6 +5,13 @@ import { Link } from 'react-router-dom';
 import '../css/App.css';
 import '../css/CalculatorPage.css';
 import StockChart from '../Component/StockChart';
+import {
+  PRESET_RANGES,
+  DEFAULT_PRESET_ID,
+  getPresetRange,
+  calculateDateRangeInDays,
+  parseISODate
+} from '../utils/dateRanges';
 
 // --- Default ค่าเริ่มต้น ---
 const DEFAULT_COMMISSION = 0.00157; // ค่าคอมมิชชั่นมาตรฐาน
@@ -21,8 +28,14 @@ function CalculatorPage() {
   const [stopLossPrice, setStopLossPrice] = useState(''); // ราคาตัดขาดทุน
   const [sellPrice, setSellPrice] = useState(''); // ราคาเป้าหมายขาย
   const [inputSymbol, setInputSymbol] = useState(''); // ชื่อหุ้น
-  const [days, setDays] = useState(30); // จำนวนวันย้อนหลัง
+  const initialRange = getPresetRange(DEFAULT_PRESET_ID) || { start: '', end: '' };
+  const [startDate, setStartDate] = useState(initialRange.start);
+  const [endDate, setEndDate] = useState(initialRange.end);
+  const [selectedPreset, setSelectedPreset] = useState(initialRange.start ? DEFAULT_PRESET_ID : null);
   const [history, setHistory] = useState([]); // ข้อมูลราคาหุ้นย้อนหลัง
+  const [currency, setCurrency] = useState(''); // display currency (what UI shows)
+  const [originalCurrency, setOriginalCurrency] = useState(''); // currency from backend (original)
+  const [fxRate, setFxRate] = useState(1); // <-- FX rate used to convert to THB
   const [error, setError] = useState(''); // error message
 
   // --- Logic: คำนวณราคาที่ควรซื้อ, stoploss, เป้าหมายขาย ---
@@ -131,6 +144,15 @@ function CalculatorPage() {
   // --- Helper Functions ---
   const formatNumber = (num, digits = 2) => num ? num.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits }) : '0.00';
 
+  const formatDisplayDate = (isoDate) => {
+    if (!isoDate) return '-';
+    const parsed = new Date(isoDate);
+    if (Number.isNaN(parsed.getTime())) return '-';
+    return parsed.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  const dateRangeInDays = useMemo(() => calculateDateRangeInDays(startDate, endDate), [startDate, endDate]);
+
   const getRRClassName = (rr) => {
     if (!rr) return '';
     if (rr >= 2) return 'rr-good';
@@ -143,16 +165,73 @@ function CalculatorPage() {
   const handleFetchHistory = async (e) => {
     e.preventDefault();
     setError('');
+    if (!inputSymbol.trim()) {
+      setError('กรุณากรอกชื่อหุ้น');
+      return;
+    }
+    if (!startDate || !endDate) {
+      setError('กรุณาเลือกช่วงวันที่ให้ครบ');
+      return;
+    }
+    const start = parseISODate(startDate);
+    const end = parseISODate(endDate);
+    if (!start || !end) {
+      setError('รูปแบบวันที่ไม่ถูกต้อง');
+      return;
+    }
+    if (start > end) {
+      setError('วันที่เริ่มต้นต้องมาก่อนหรือเท่ากับวันที่สิ้นสุด');
+      return;
+    }
+
     try {
-      const data = await fetchStockHistory(inputSymbol, days);
-      setHistory(data);
+      // 1) ตรวจสกุลหุ้นจาก quote endpoint ก่อน เพื่อเตรียม FX หากจำเป็น
+      const t = inputSymbol.trim().toUpperCase();
+      let detectedCurrency = '';
+      let rate = 1;
+      try {
+        const qRes = await fetch(`http://localhost:5000/api/stock/${t}`);
+        if (qRes.ok) {
+          const q = await qRes.json();
+          detectedCurrency = q.currency || (t.endsWith('.BK') || /^[A-Z0-9]{1,3}$/.test(t) ? 'THB' : 'USD');
+        } else {
+          detectedCurrency = (t.endsWith('.BK') || /^[A-Z0-9]{1,3}$/.test(t) ? 'THB' : 'USD');
+        }
+      } catch (err) {
+        detectedCurrency = (t.endsWith('.BK') || /^[A-Z0-9]{1,3}$/.test(t) ? 'THB' : 'USD');
+      }
+      // 2) ถ้าเป็น USD ให้ดึงอัตรา USD->THB จาก backend
+      if (detectedCurrency === 'USD') {
+        try {
+          const fxRes = await fetch('http://localhost:5000/api/forex/usd-thb');
+          if (fxRes.ok) {
+            const fx = await fxRes.json();
+            rate = Number(fx.rate) || rate;
+          }
+        } catch (e) {
+          // fallback keep rate = 1
+        }
+      }
+      setOriginalCurrency(detectedCurrency);
+      // ถ้าแปลงเป็น THB ให้แสดงผลเป็น THB (UI) แต่เก็บ originalCurrency แยกไว้
+      const displayCurrency = detectedCurrency === 'USD' ? 'THB' : (detectedCurrency || 'THB');
+      setCurrency(displayCurrency);
+      setFxRate(rate);
+
+      // 3) ดึง history แล้วแปลงราคาทุกตัวเป็น THB (เก็บ originalClose)
+      const data = await fetchStockHistory(t, startDate, endDate);
+      const converted = (Array.isArray(data) ? data : []).map(row => {
+        const orig = typeof row.close === 'number' ? Number(row.close) : null;
+        const conv = (orig !== null && detectedCurrency === 'USD') ? Number((orig * rate).toFixed(4)) : orig;
+        return { ...row, originalClose: orig, originalCurrency: detectedCurrency, close: conv };
+      });
+      setHistory(converted);
       if (data.length > 0) {
-        // ตั้งราคาซื้อเป็นราคาปิดล่าสุด
-        setBuyPrice(data[data.length - 1].close);
-        // ตั้ง stoploss เป็น low สุดในช่วง
-        setStopLossPrice(Math.min(...data.map(d => d.close)));
-        // ตั้งเป้าหมายขายเป็น high สุดในช่วง
-        setSellPrice(Math.max(...data.map(d => d.close)));
+        // ตั้งราคาซื้อ/SL/TP เป็นค่าที่แปลงเป็น THB แล้ว (ถ้ามี)
+        const last = converted[converted.length - 1];
+        setBuyPrice(last?.close ?? '');
+        setStopLossPrice(Math.min(...converted.map(d => d.close)));
+        setSellPrice(Math.max(...converted.map(d => d.close)));
       }
     } catch (err) {
       setError(err.message);
@@ -162,10 +241,10 @@ function CalculatorPage() {
   // --- Render ---
   return (
     <div className="page-container calculator-page">
-      <h1>📊 เครื่องมือวางแผนการเทรด (Trade Planner)</h1>
+      <h1>Equity Trade Calculator</h1>
       <p>
         วางแผนการซื้อขาย, ประเมินความเสี่ยง, คำนวณ Risk/Reward, จำนวนหุ้นที่ควรซื้อ, ค่าธรรมเนียม และราคาที่ควรตั้ง Stop Loss/เป้าหมายขาย <br />
-        <span style={{ color: '#f7ca18', fontWeight: 600 }}>* สามารถปรับค่าธรรมเนียมและ % ความเสี่ยงได้เอง</span>
+        <span style={{ color: '#f7ca18', fontWeight: 600 }}>สามารถปรับค่าธรรมเนียมและ % ความเสี่ยงได้เอง</span>
       </p>
 
       {/* --- Input Form --- */}
@@ -193,19 +272,59 @@ function CalculatorPage() {
         </div>
         {/* ช่องกรอกราคาซื้อ */}
         <div className="form-group">
-          <label htmlFor="buyPrice">ราคาเข้าซื้อ</label>
-          <input id="buyPrice" type="number" className="stockname-input" value={buyPrice} onChange={e => setBuyPrice(e.target.value)} placeholder="10.50" required />
+          <label htmlFor="buyPrice">ราคาเข้าซื้อ {originalCurrency ? `(${originalCurrency} → THB @ ${fxRate.toFixed(4)})` : '(บาท)'}</label>
+          <input
+            id="buyPrice"
+            type="number"
+            className="stockname-input"
+            value={buyPrice}
+            onChange={e => {
+              const v = e.target.value;
+              const n = v === '' ? '' : Number(v);
+              if (v === '' || Number.isNaN(n)) return setBuyPrice('');
+              const conv = currency === 'USD' ? Number((n * fxRate).toFixed(4)) : n;
+              setBuyPrice(conv);
+            }}
+            placeholder={currency ? `ใส่เป็น ${currency} จะถูกแปลงเป็น THB` : '10.50'}
+            required
+          />
         </div>
         {/* ช่องกรอกราคาตัดขาดทุน */}
         <div className="form-group">
           <label htmlFor="stopLossPrice">ราคาตัดขาดทุน (SL)</label>
-          <input id="stopLossPrice" type="number" className="stockname-input" value={stopLossPrice || calculatedStopLoss} onChange={e => setStopLossPrice(e.target.value)} placeholder="คำนวณอัตโนมัติ" />
+          <input
+            id="stopLossPrice"
+            type="number"
+            className="stockname-input"
+            value={stopLossPrice || calculatedStopLoss}
+            onChange={e => {
+              const v = e.target.value;
+              const n = v === '' ? '' : Number(v);
+              if (v === '' || Number.isNaN(n)) return setStopLossPrice('');
+              const conv = currency === 'USD' ? Number((n * fxRate).toFixed(4)) : n;
+              setStopLossPrice(conv);
+            }}
+            placeholder="คำนวณอัตโนมัติ"
+          />
           <span style={{ fontSize: '0.9em', color: '#bfc9d1' }}>คำนวณจาก % ความเสี่ยง</span>
         </div>
         {/* ช่องกรอกราคาเป้าหมายขาย */}
         <div className="form-group">
           <label htmlFor="sellPrice">ราคาเป้าหมาย (TP)</label>
-          <input id="sellPrice" type="number" className="stockname-input" value={sellPrice || calculatedSellPrice} onChange={e => setSellPrice(e.target.value)} placeholder="คำนวณอัตโนมัติ" />
+          <input
+            id="sellPrice"
+            type="number"
+            className="stockname-input"
+            value={sellPrice || calculatedSellPrice}
+            onChange={e => {
+              const v = e.target.value;
+              const n = v === '' ? '' : Number(v);
+              if (v === '' || Number.isNaN(n)) return setSellPrice('');
+              const conv = currency === 'USD' ? Number((n * fxRate).toFixed(4)) : n;
+              setSellPrice(conv);
+            }}
+            placeholder="คำนวณอัตโนมัติ"
+          />
           <span style={{ fontSize: '0.9em', color: '#bfc9d1' }}>RR = 2 เท่า</span>
         </div>
       </div>
@@ -233,7 +352,7 @@ function CalculatorPage() {
               <div className={`indicator-card ${getRRClassName(calculations.riskRewardRatio)}`}>
                 <h3>Risk:Reward Ratio</h3>
                 <p className="indicator-value">1 : {formatNumber(calculations.riskRewardRatio)}</p>
-                <span>(เป้าหมาย > 1.5)</span>
+                <span>(เป้าหมาย &gt; 1.5)</span>
               </div>
             </div>
           </div>
@@ -281,40 +400,86 @@ function CalculatorPage() {
 
       {/* --- กราฟราคาหุ้นย้อนหลัง + จุด marker --- */}
       {chartData.length > 0 && (
-        <div className="chart-container" style={{ marginBottom: 32 }}>
-          <StockChartWithMarkers
-            data={chartData}
-            buyPrice={parseFloat(buyPrice)}
-            sellPrice={parseFloat(sellPrice)}
-            stopLossPrice={parseFloat(stopLossPrice)}
-          />
-        </div>
-      )}
-
+         <div className="chart-container" style={{ marginBottom: 32 }}>
+             <StockChartWithMarkers
+               data={chartData}
+               buyPrice={Number(parseFloat(buyPrice) || NaN)}
+               sellPrice={Number(parseFloat(sellPrice) || NaN)}
+               stopLossPrice={Number(parseFloat(stopLossPrice) || NaN)}
+               currency={currency}
+             />
+           </div>
+         )}
       {/* --- Stock History Form --- */}
       <div className="stock-history-form">
         <h2>ดึงข้อมูลราคาหุ้นย้อนหลัง</h2>
         <form onSubmit={handleFetchHistory}>
-          <input
-            type="text"
-            value={inputSymbol}
-            onChange={e => setInputSymbol(e.target.value)}
-            placeholder="ชื่อหุ้น เช่น PTT"
-          />
-          <input
-            type="number"
-            value={days}
-            min={0}
-            max={730}
-            onChange={e => setDays(Math.max(0, parseInt(e.target.value) || 0))}
-            placeholder="จำนวนวันย้อนหลัง"
-          />
-          <button type="submit">ดึงราคาย้อนหลัง</button>
+          <div className="history-grid">
+            <input
+              type="text"
+              value={inputSymbol}
+              onChange={e => setInputSymbol(e.target.value)}
+              placeholder="ชื่อหุ้น เช่น PTT"
+            />
+            <div className="date-range-row">
+              <label className="date-label">
+                จาก
+                <input
+                  type="date"
+                  value={startDate}
+                  max={endDate || undefined}
+                  onChange={e => {
+                    setStartDate(e.target.value);
+                    setSelectedPreset(null);
+                  }}
+                />
+              </label>
+              <label className="date-label">
+                ถึง
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate || undefined}
+                  onChange={e => {
+                    setEndDate(e.target.value);
+                    setSelectedPreset(null);
+                  }}
+                />
+              </label>
+            </div>
+            <div className="preset-buttons">
+              {PRESET_RANGES.map(option => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className={`range-button${selectedPreset === option.id ? ' active' : ''}`}
+                  onClick={() => {
+                    const range = option.getRange();
+                    setStartDate(range.start);
+                    setEndDate(range.end);
+                    setSelectedPreset(option.id);
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <button type="submit" className="history-submit">ดึงราคาย้อนหลัง</button>
+          </div>
         </form>
+        {error && (
+          <div className="error-message" style={{ marginTop: 12 }}>
+            {error}
+          </div>
+        )}
         {/* แสดงราคาปิดย้อนหลัง */}
         {history.length > 0 && (
           <div style={{ marginTop: 16, color: '#bfc9d1', fontSize: 14 }}>
-            ราคาปิดย้อนหลัง {days} วัน: {history.map(d => d.close).join(', ')}
+            ราคาปิดช่วง {formatDisplayDate(startDate)} - {formatDisplayDate(endDate)} ({dateRangeInDays} วัน):
+            {' '}
+            {history.map(d => (
+              d.originalClose != null ? `${d.originalClose} ${d.originalCurrency} → ${d.close}` : `${d.close}`
+            )).join(', ')}
           </div>
         )}
       </div>
@@ -328,16 +493,16 @@ function CalculatorPage() {
 export default CalculatorPage;
 
 // --- ดึงราคาหุ้นย้อนหลังจาก backend ---
-async function fetchStockHistory(symbol, days) {
+async function fetchStockHistory(symbol, startDate, endDate) {
   // ส่งสัญลักษณ์ตามที่ผู้ใช้กรอก (ปล่อย backend ตัดสินใจ .BK)
   const ticker = symbol.trim().toUpperCase();
 
-  const today = new Date();
-  const startDate = new Date();
-  startDate.setDate(today.getDate() - days);
-  const startDateString = startDate.toISOString().split('T')[0];
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  const query = params.toString();
 
-  const url = `http://localhost:5000/api/stock/history/${ticker}?startDate=${startDateString}`;
+  const url = `http://localhost:5000/api/stock/history/${ticker}${query ? `?${query}` : ''}`;
   const res = await fetch(url);
   if (!res.ok) {
     const err = await res.json();
@@ -345,68 +510,69 @@ async function fetchStockHistory(symbol, days) {
   }
   return await res.json();
 }
-
+ 
 // กราฟราคาหุ้นย้อนหลัง + จุด marker (Buy/Sell/Stop)
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceDot } from 'recharts';
 
-function StockChartWithMarkers({ data, buyPrice, sellPrice, stopLossPrice }) {
-  return (
-    <ResponsiveContainer width="100%" height={350}>
-      <LineChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-        <XAxis dataKey="date" tick={{ fill: 'var(--color-text-secondary)', fontSize: 12 }} />
-        <YAxis
-          tick={{ fill: 'var(--color-text-secondary)', fontSize: 12 }}
-          domain={['auto', 'auto']}
-          tickFormatter={value => (typeof value === 'number' ? value.toFixed(0) : '')}
-        />
-        <Tooltip
-          contentStyle={{
-            background: 'var(--color-bg-secondary)',
-            color: 'var(--color-text)',
-            borderRadius: '8px',
-            border: '1px solid var(--color-border)'
-          }}
-          labelStyle={{ color: 'var(--color-accent)', fontWeight: 'bold' }}
-          formatter={(value) =>
-            typeof value === 'number' ? [`${value.toFixed(2)} บาท`, 'ราคาปิด'] : ['-', 'ราคาปิด']
-          }
-        />
-        <Line type="monotone" dataKey="close" stroke="var(--color-accent)" strokeWidth={2.5} dot={false} />
-        {/* จุดซื้อ */}
-        {buyPrice && (
-          <ReferenceDot
-            x={data.find(d => d.close === buyPrice)?.date}
-            y={buyPrice}
-            r={8}
-            fill="#4caf50"
-            stroke="#fff"
-            label="ซื้อ"
-          />
-        )}
-        {/* จุดขาย */}
-        {sellPrice && (
-          <ReferenceDot
-            x={data.find(d => d.close === sellPrice)?.date}
-            y={sellPrice}
-            r={8}
-            fill="#f7ca18"
-            stroke="#fff"
-            label="ขาย"
-          />
-        )}
-        {/* จุด Stop Loss */}
-        {stopLossPrice && (
-          <ReferenceDot
-            x={data.find(d => d.close === stopLossPrice)?.date}
-            y={stopLossPrice}
-            r={8}
-            fill="#d32f2f"
-            stroke="#fff"
-            label="SL"
-          />
-        )}
-      </LineChart>
-    </ResponsiveContainer>
-  );
+function StockChartWithMarkers({ data, buyPrice, sellPrice, stopLossPrice, currency = 'THB' }) {
+   return (
+     <ResponsiveContainer width="100%" height={350}>
+       <LineChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+         <XAxis dataKey="date" tick={{ fill: 'var(--color-text-secondary)', fontSize: 12 }} />
+         <YAxis
+           tick={{ fill: 'var(--color-text-secondary)', fontSize: 12 }}
+           domain={['auto', 'auto']}
+           tickFormatter={value => (typeof value === 'number' ? value.toFixed(0) : '')}
+         />
+         <Tooltip
+           contentStyle={{
+             background: 'var(--color-bg-secondary)',
+             color: 'var(--color-text)',
+             borderRadius: '8px',
+             border: '1px solid var(--color-border)'
+           }}
+           labelStyle={{ color: 'var(--color-accent)', fontWeight: 'bold' }}
+           formatter={(value) => {
+             const curLabel = currency === 'THB' ? 'บาท' : (currency || 'USD');
+             return typeof value === 'number' ? [`${value.toFixed(2)} ${curLabel}`, 'ราคาปิด'] : ['-', 'ราคาปิด'];
+           }}
+         />
+         <Line type="monotone" dataKey="close" stroke="var(--color-accent)" strokeWidth={2.5} dot={false} />
+         {/* จุดซื้อ */}
+         {Number.isFinite(buyPrice) && (
+           <ReferenceDot
+             x={data.find(d => Math.abs((d.close||0) - buyPrice) < 1e-6)?.date}
+             y={buyPrice}
+             r={8}
+             fill="#4caf50"
+             stroke="#fff"
+             label="ซื้อ"
+           />
+         )}
+         {/* จุดขาย */}
+         {Number.isFinite(sellPrice) && (
+           <ReferenceDot
+             x={data.find(d => Math.abs((d.close||0) - sellPrice) < 1e-6)?.date}
+             y={sellPrice}
+             r={8}
+             fill="#f7ca18"
+             stroke="#fff"
+             label="ขาย"
+           />
+         )}
+         {/* จุด Stop Loss */}
+         {Number.isFinite(stopLossPrice) && (
+           <ReferenceDot
+             x={data.find(d => Math.abs((d.close||0) - stopLossPrice) < 1e-6)?.date}
+             y={stopLossPrice}
+             r={8}
+             fill="#d32f2f"
+             stroke="#fff"
+             label="SL"
+           />
+         )}
+       </LineChart>
+     </ResponsiveContainer>
+   );
 }

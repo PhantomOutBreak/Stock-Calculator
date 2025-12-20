@@ -1,56 +1,137 @@
-/* กล่องหลักของ input หุ้น */
+/* =========================================
+   STOCK INPUT MODULE (Cyber-Glass Design)
+   ========================================= */
+
+/* 1. Container: กล่องกระจกที่ลอยเด่น */
 .stockname-container {
+  /* Layout & Sizing */
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
+  gap: 1rem;
   width: 100%;
-  max-width: 350px;
-  margin: 0 auto;
-  padding: 18px 22px;
-  background: linear-gradient(90deg, #7200de 0%, #94009e 100%);
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(40,62,81,0.08);
-  border: 1px solid #f7ca18;
+  max-width: 450px; /* ขยายให้ดูโปร่งขึ้น */
+  margin: 2rem auto;
+  padding: 2rem;
+
+  /* Glassmorphism Background */
+  background: rgba(20, 20, 40, 0.6); /* พื้นหลังโปร่งแสง */
+  backdrop-filter: blur(20px) saturate(180%); /* เบลอฉากหลัง */
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  
+  /* Border & Shape */
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08); /* เส้นขอบบางๆ */
+  
+  /* Depth & Shadow */
+  box-shadow: 
+    0 20px 40px -10px rgba(0, 0, 0, 0.6), /* เงาหลัก */
+    inset 0 0 20px rgba(255, 255, 255, 0.02); /* แสงสะท้อนด้านใน */
+
+  /* Animation */
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), 
+              box-shadow 0.4s ease,
+              border-color 0.4s ease;
+  
+  position: relative;
+  overflow: hidden; /* สำหรับเอฟเฟกต์แสงวิ่ง */
 }
 
-/* label สำหรับ input */
+/* เอฟเฟกต์แสงวิ่งด้านบน (Top Highlight) */
+.stockname-container::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.8), rgba(236, 72, 153, 0.8), transparent);
+  opacity: 0.5;
+}
+
+/* Hover State: ยกตัวขึ้นและเรืองแสง */
+.stockname-container:hover {
+  transform: translateY(-5px);
+  box-shadow: 
+    0 30px 60px -15px rgba(0, 0, 0, 0.7),
+    0 0 30px rgba(99, 102, 241, 0.15); /* แสงสีม่วงจางๆ */
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* 2. Label: หัวข้อที่ดูทันสมัย */
 .stockname-label {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #283e51;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em; /* ระยะห่างตัวอักษรแบบ Cinematic */
+  color: #a5b4fc; /* สีม่วงอ่อน (Indigo-200) */
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  margin-left: 4px;
 }
 
-/* input สำหรับชื่อหุ้น */
+/* จุดไฟ Neon นำหน้า Label */
+.stockname-label::before {
+  content: '';
+  display: block;
+  width: 8px; 
+  height: 8px;
+  background: #22d3ee; /* สีฟ้า Cyan */
+  border-radius: 50%;
+  box-shadow: 0 0 10px #22d3ee; /* แสงฟุ้ง */
+  animation: pulseDot 2s infinite;
+}
+
+@keyframes pulseDot {
+  0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(34, 211, 238, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+}
+
+/* 3. Input: ช่องกรอกข้อมูลสุดล้ำ */
 .stockname-input {
   width: 100%;
-  padding: 12px 16px;
-  font-size: 1.1rem;
-  border: 1.5px solid #f7ca18;
-  border-radius: 8px;
-  outline: none;
-  background: #fff;
-  color: #283e51;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  box-shadow: 0 1px 4px rgba(40,62,81,0.04);
+  padding: 1.1rem 1.5rem;
+  font-size: 1.2rem;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  
+  /* Input Background */
+  background: rgba(10, 10, 20, 0.6); 
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
 }
 
+.stockname-input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+/* Input Focus State: เรืองแสง */
 .stockname-input:focus {
-  border-color: #ffd700;
-  box-shadow: 0 2px 8px rgba(247,202,24,0.15);
+  outline: none;
+  background: rgba(15, 15, 30, 0.9);
+  border-color: #818cf8; /* สีม่วงเข้มขึ้น */
+  box-shadow: 
+    0 0 0 4px rgba(99, 102, 241, 0.2), /* Ring Focus */
+    0 0 25px rgba(99, 102, 241, 0.2); /* Outer Glow */
+  transform: scale(1.02); /* ขยายขึ้นนิดนึง */
 }
 
-/* Responsive: ปรับขนาดบนจอเล็ก */
+/* 4. Responsive Adjustments */
 @media (max-width: 480px) {
   .stockname-container {
-    padding: 12px 8px;
-    max-width: 100%;
+    padding: 1.5rem;
+    width: 90%;
+    margin: 1.5rem auto;
   }
+  
   .stockname-input {
-    font-size: 1rem;
-    padding: 10px 10px;
+    padding: 1rem 1.2rem;
+    font-size: 1.1rem;
   }
 }

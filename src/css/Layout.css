@@ -1,59 +1,156 @@
 /* src/components/Layout.css */
+:root{
+  /* Local layout tokens — ถ้ามี global var ใน App.css จะถูกใช้แทน */
+  --layout-sidebar-width: 250px;
+  --layout-content-padding: 2rem;
+  --layout-bg: var(--color-bg, #181c24);
+  --layout-surface: rgba(255,255,255,0.02);
+  --layout-border: rgba(255,255,255,0.06);
+  --overlay-color: rgba(0,0,0,0.55);
+  --transition-fast: 180ms;
+  --transition-medium: 320ms;
+  --shadow-lg: 0 20px 50px rgba(0,0,0,0.55);
+}
+
+/* Base layout */
 .layout-container {
-  display: flex; /* Flexbox สำหรับจัด Sidebar และ Content */
+  display: flex;
   width: 100%;
   min-height: 100vh;
-  /* background-color: #f0f2f5; -- สามารถเอาสีพื้นหลังไปไว้ใน body หรือ root ได้ */
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background var(--transition-medium) ease;
 }
 
-/* พื้นที่เนื้อหาหลัก */
+/* Main content area (keeps same API as before) */
 .layout-content {
   flex: 1;
-  padding: 2rem; /* Padding รอบเนื้อหาหลัก */
-  transition: margin-left 0.3s;
-  overflow-y: auto; /* ถ้าเนื้อหาเยอะเกิน ก็ให้ Scroll ได้เฉพาะส่วนนี้ */
-  background-color: #444444; /* สีพื้นหลังของพื้นที่เนื้อหา */
-  position: relative; /* สำหรับ overlay */
+  padding: var(--layout-content-padding);
+  transition: margin-left var(--transition-medium) ease, transform var(--transition-medium) ease;
+  overflow-y: auto;
+  background-color: var(--layout-bg);
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+  border-left: 1px solid var(--layout-border);
+  /* subtle inner glow to match other pages */
+  backdrop-filter: saturate(120%) blur(6px);
 }
 
-/* Overlay สำหรับเมื่อ Sidebar เปิดบนมือถือ */
+/* content container max width for comfortable reading */
+.layout-content > .page-container,
+.layout-content > .results-wrapper {
+  max-width: var(--layout-max-width, 1300px);
+  margin: 0 auto;
+}
+
+/* ---------------------------
+   Full-bleed layout helpers
+   --------------------------- */
+/* When Layout.jsx adds .full-bleed, make children truly full-width
+   without changing component classnames used elsewhere. Responsive-safe. */
+.layout-content.full-bleed {
+  padding: 0; /* allow child pages to control their own padding */
+  min-height: 100vh;
+  background-color: transparent; /* keep underlying bg */
+}
+
+.layout-content.full-bleed > .page-container,
+.layout-content.full-bleed > .results-wrapper {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 0; /* page components should add internal padding if needed */
+}
+
+/* helper: allow specific containers to request padding while staying full-bleed */
+.page-container.full-pad,
+.results-wrapper.full-pad {
+  padding: var(--layout-content-padding);
+}
+
+/* fullscreen chart utility (opt-in via .fullscreen on chart container) */
+.chart-container.fullscreen {
+  width: 100%;
+  height: calc(100vh - 120px); /* header + controls approx */
+  min-height: 420px;
+  max-height: none;
+  padding: 0;
+}
+
+/* Overlay shown on mobile when sidebar open */
 .sidebar-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5); /* Dimming effect */
-  z-index: 999; /* อยู่ใต้ Sidebar แต่เหนือเนื้อหาหลัก */
-  display: none; /* ซ่อนไว้ก่อน */
+  inset: 0;
+  background: var(--overlay-color);
+  z-index: 999;
+  display: none;
+  opacity: 0;
+  transition: opacity var(--transition-fast) ease;
+  backdrop-filter: blur(4px);
 }
 
-/* เมื่อ Sidebar เปิด: แสดง Overlay (เฉพาะบนมือถือ) และอาจจะผลักเนื้อหาหลัก */
-/* สำหรับ Desktop: Sidebar จะผลักเนื้อหาหลักจริงๆ */
+/* When sidebar is open on desktop: push content (preserve previous margin API) */
 @media (min-width: 769px) {
   .layout-container.sidebar-open .layout-content {
-    /* บน Desktop, Sidebar จะอยู่ด้านซ้ายและเนื้อหาจะเลื่อนไปทางขวา */
-    margin-left: 250px; /* เท่าความกว้าง Sidebar */
-    transition: margin-left 0.3s ease-out; /* Animation เมื่อ Sidebar เปิด/ปิด */
+    margin-left: var(--layout-sidebar-width);
+    transition: margin-left var(--transition-medium) cubic-bezier(.2,.9,.2,1);
   }
   .layout-container.sidebar-closed .layout-content {
     margin-left: 0;
-    transition: margin-left 0.3s ease-out;
+    transition: margin-left var(--transition-medium) cubic-bezier(.2,.9,.2,1);
   }
 }
 
-/* สำหรับ Mobile: Sidebar เป็น Overlay */
+/* Mobile: sidebar becomes overlay — show overlay and avoid pushing content */
 @media (max-width: 768px) {
   .layout-container {
-    flex-direction: column; /* Sidebar อยู่ด้านบน (แต่ถูกซ่อนด้วย position/transform) */
+    flex-direction: column;
   }
 
-  /* แสดง Overlay เมื่อ Sidebar เปิดบนมือถือ */
   .layout-container.sidebar-open .sidebar-overlay {
     display: block;
+    opacity: 1;
+    transition: opacity var(--transition-fast) ease;
   }
 
   .layout-content {
     margin-left: 0;
+    transform: none;
+    /* keep padding comfortable on mobile */
+    padding: 1.25rem;
+  }
+}
+
+/* Accessibility & UX niceties */
+.sidebar-overlay[role="button"],
+.sidebar-overlay[tabindex] {
+  cursor: pointer;
+}
+
+.layout-content::-webkit-scrollbar {
+  width: 10px;
+}
+.layout-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.layout-content:focus-within {
+  outline: none;
+  box-shadow: var(--shadow-lg);
+}
+
+/* Ensure compatibility with existing .sidebar--open / .sidebar--closed variants */
+.layout-container.sidebar-open .layout-content,
+.layout-container.sidebar--open .layout-content {
+  /* no-op: handled above */
+}
+
+/* Small helper to avoid content jump on width change */
+@media (min-width: 1200px) {
+  .layout-content {
+    padding: calc(var(--layout-content-padding) + 0.5rem);
   }
 }

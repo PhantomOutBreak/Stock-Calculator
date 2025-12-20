@@ -1,271 +1,276 @@
 /* src/css/IndicatorsPage.css */
 
-/* --- Form Styles --- */
+/* =========================================
+   1. CORE DESIGN TOKENS
+   ========================================= */
+:root {
+  --neon-indigo: #6366f1;
+  --neon-cyan: #22d3ee;
+  --glass-bg: rgba(15, 23, 42, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  --input-bg: rgba(10, 15, 30, 0.6);
+}
+
+/* Page Title Gradient (match Calculator header) */
+.page-container h1 {
+  text-align: center;
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  font-weight: 900;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(
+    to right,
+    #cbd5e1,
+    #8a2be2 25%,
+    #ff00cc 50%,
+    #00d4ff 75%,
+    #cbd5e1
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 5s linear infinite;
+}
+
+
+/* =========================================
+   2. FORM SECTION (Enhanced Professional Look)
+   ========================================= */
 .indicator-form {
   display: flex;
-  flex-direction: column; /* 1. เริ่มต้นด้วยแนวตั้งสำหรับจอเล็ก */
-  gap: 1.25rem; /* เพิ่มระยะห่างระหว่างแถว */
-  max-width: 500px;
+  flex-direction: column;
+  gap: 1.75rem;
   width: 100%;
-  margin: 2rem auto 3rem auto;
-  padding: 1.5rem;
-  background-color: var(--color-surface);
-  border-radius: 12px;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--color-border);
+  max-width: 850px; /* ปรับขนาดให้สมดุล */
+  margin: 3.5rem auto;
+  padding: 3rem;
+  
+  /* High-End Glassmorphism */
+  background: var(--glass-bg);
+  backdrop-filter: blur(25px) saturate(160%);
+  -webkit-backdrop-filter: blur(25px) saturate(160%);
+  
+  border-radius: 28px;
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--card-shadow);
+  
+  position: relative;
+  overflow: hidden;
+}
+
+/* เพิ่มเส้นแสงวิ่งด้านบนฟอร์ม */
+.indicator-form::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-indigo), var(--neon-cyan), transparent);
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  width: auto; /* บนจอเล็ก ให้แต่ละกลุ่มกว้างเต็ม */
+  gap: 0.75rem;
 }
 
 .form-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  padding-left: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #94a3b8; /* Muted Blue Grey */
+  margin-left: 0.2rem;
 }
 
-.indicator-form .primary-button {
-    flex-shrink: 0; /* ป้องกันปุ่มถูกบีบ */
-    margin-top: 0; /* เอาระยะห่างด้านบนออก */
+.indicator-form input[type="text"],
+.indicator-form input[type="date"] {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  background: var(--input-bg);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #f8fafc;
+  font-size: 1.05rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.days-input-wrapper {
-  /* เพิ่มส่วนนี้เพื่อให้ wrapper ของ days input ไม่ขยายเต็ม */
-  flex-grow: 0;
+.indicator-form input:focus {
+  outline: none;
+  border-color: var(--neon-indigo);
+  background: rgba(10, 15, 30, 0.9);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+  transform: translateY(-2px);
 }
 
-.days-input {
-  width: 80px;
-  flex-grow: 0;
+.date-range-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
 }
 
-.indicator-form .primary-button {
-  flex-shrink: 0;
-   margin: auto;
-}
-
-/* --- Media Queries for Larger Screens (768px ขึ้นไป) --- */
-@media (min-width: 768px) {
-  /* เมื่อหน้าจอกว้างขึ้น ให้เปลี่ยนเป็นแนวนอน */
-  .indicator-form {
-    flex-direction: row; /* 2. เปลี่ยนเป็นแนวนอน */
-    flex-wrap: nowrap; /* ไม่ให้ตัดบรรทัด */
-    align-items: flex-end; /* 3. จัดให้ทุกอย่างชิดขอบล่าง */
-    gap: 1rem; /* ลดระยะห่างสำหรับแนวนอน */
-    max-width: 700px; /* ขยายความกว้างสูงสุด */
-  }
-}
-
-/* --- Custom Number Input Decoration --- */
-.days-input-wrapper {
+/* Preset Buttons Styling */
+.preset-buttons {
   display: flex;
-  align-items: center;
-  height: 42px;
-  margin: auto;
-  flex-grow: 0;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
 }
 
-.day-stepper-button {
-  width: 42px;
-  height: 100%;
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
-  font-size: 1.5rem;
-  font-weight: 400;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  line-height: 1;
-}
-
-.day-stepper-button:hover {
-  background-color: var(--color-primary);
-  color: var(--color-text-on-primary);
-  border-color: var(--color-primary);
-}
-
-.day-stepper-button:first-of-type {
-  border-radius: 8px 0 0 8px;
-  border-right: none;
-}
-
-.day-stepper-button:last-of-type {
-  border-radius: 0 8px 8px 0;
-  border-left: none;
-}
-
-.days-input-wrapper .days-input {
-  width: 80px;
-  height: 100%;
-  text-align: center;
-  font-size: 1.1rem;
+.indicator-form .range-button {
+  padding: 0.7rem 1.4rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  font-size: 0.85rem;
   font-weight: 600;
-  border-radius: 0;
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
-  border-left: none;
-  border-right: none;
-}
-.days-input-wrapper .days-input:focus {
-    outline: none;
-}
-.days-input-wrapper .days-input::-webkit-outer-spin-button,
-.days-input-wrapper .days-input::-webkit-inner-spin-button {
-  -webkit-appearance: none; /* Chrome, Safari, Edge */
-  margin: 0;
+  transition: all 0.25s ease;
 }
 
-
-/* --- Results & Animation --- */
-.charts-group, .indicators-results-container {
-  animation: fadeIn 0.5s 0.1s ease-out forwards;
-  opacity: 0;
+.indicator-form .range-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(15px); }
+.indicator-form .range-button.active {
+  background: var(--neon-indigo);
+  color: #fff;
+  border: none;
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.4);
+}
+
+/* =========================================
+   3. CHART VIEWPORT (Premium Trading Layout)
+   ========================================= */
+.results-wrapper {
+  width: 100%;
+  max-width: 1350px;
+  margin: 4rem auto;
+  animation: smoothSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes smoothSlideUp {
+  from { opacity: 0; transform: translateY(40px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- Charts Group --- */
-.charts-group {
+.tradingview-layout {
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
-  width: 100%;
+  gap: 2rem;
+  padding: 2.5rem;
+  border-radius: 36px;
+  background: radial-gradient(circle at top left, #1e293b, #0f172a);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.8);
 }
 
+/* กล่องกราฟหลัก */
 .chart-wrapper {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  padding: 1.5rem 1rem 1rem 0.5rem;
-  box-shadow: var(--shadow-md);
-  transition: box-shadow 0.3s ease;
+  background: rgba(10, 15, 25, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  padding: 1.75rem;
+  transition: all 0.4s ease;
 }
 
 .chart-wrapper:hover {
-  box-shadow: var(--shadow-lg);
+  border-color: rgba(99, 102, 241, 0.2);
+  background: rgba(10, 15, 25, 0.7);
 }
 
 .chart-wrapper h3 {
-  margin: 0 0 1.5rem 1.5rem;
-  color: var(--color-text-primary);
-  font-size: 1.1rem;
-  font-weight: 600;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 1rem;
-}
-
-/* --- Indicator Cards --- */
-.indicators-results-container {
-  margin-top: 3.5rem;
-}
-
-.indicators-results-container h2 {
-  text-align: center;
-  margin-bottom: 2rem;
-  font-size: 1.5rem;
-}
-
-.indicator-card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.25rem;
-}
-
-.indicator-card {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 1.25rem;
-  text-align: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: var(--shadow-sm);
-  position: relative;
-  overflow: hidden;
-}
-.indicator-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 6px;
-    background-color: var(--color-secondary);
-}
-.indicator-card:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-lg);
-}
-.indicator-card h3 {
-  margin: 0.5rem 0 0.5rem 0;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 800;
   text-transform: uppercase;
-  color: var(--color-text-secondary);
-}
-.indicator-value {
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
-}
-
-.signal-card.rsi-signal::before { background-color: var(--color-rsi-signal); }
-.signal-card.macd-signal::before { background-color: var(--color-macd-signal); }
-
-.signal-card .indicator-value {
-  font-size: 1.4rem;
-  font-weight: 600;
-}
-
-/* --- Back Button --- */
-.back-button {
-  display: block;
-  width: fit-content;
-  margin: 3.5rem auto 1rem auto;
-}
-
-/* --- Chart Controls (vertical sizing & zoom) --- */
-.chart-controls {
+  letter-spacing: 0.1em;
+  color: #cbd5e1;
+  margin-bottom: 1.5rem;
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
   align-items: center;
-  justify-content: center;
-  max-width: 900px;
-  width: 100%;
-  margin: 1rem auto 1.5rem auto;
-  padding: 0.75rem 1rem;
-  background-color: var(--color-surface);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border);
+  gap: 12px;
+}
+
+.chart-wrapper h3::before {
+  content: '';
+  width: 8px; height: 8px;
+  background: var(--neon-cyan);
+  border-radius: 2px;
+  box-shadow: 0 0 12px var(--neon-cyan);
+}
+
+/* =========================================
+   4. INTERACTIVE CHART CONTROLS
+   ========================================= */
+.chart-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  max-width: 1000px;
+  margin: 0 auto 3rem;
+  padding: 2rem;
+  background: var(--glass-bg);
+  border-radius: 20px;
+  border: 1px solid var(--glass-border);
 }
 
 .chart-controls .control {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  min-width: 240px;
-  flex: 1 1 260px;
+  gap: 1rem;
 }
 
 .chart-controls label {
-  font-size: 0.9rem;
-  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
 }
 
-.chart-controls input[type="range"] {
-  width: 100%;
+/* Custom Range Input */
+input[type="range"] {
+  -webkit-appearance: none;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  outline: none;
 }
 
-.chart-controls .reset-button {
-  height: 40px;
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px;
+  background: #fff;
+  border: 3px solid var(--neon-indigo);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+  transition: all 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  background: var(--neon-indigo);
+}
+
+/* =========================================
+   5. RESPONSIVE OPTIMIZATION
+   ========================================= */
+@media (max-width: 768px) {
+  .indicator-form { padding: 2rem; margin: 2rem 1rem; }
+  .tradingview-layout { padding: 1.25rem; border-radius: 24px; }
+  .chart-wrapper { padding: 1rem; }
+  .chart-controls { margin: 0 1rem 2rem; grid-template-columns: 1fr; }
+}
+
+/* Success/Warning Chips */
+.warning-chip, .analysis-range-banner {
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  text-align: center;
 }

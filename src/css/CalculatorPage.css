@@ -1,86 +1,415 @@
 /* src/css/CalculatorPage.css */
 
+/* =========================================
+   1. VARIABLES & THEME SETUP
+   ========================================= */
+:root {
+  --calc-bg-glass: rgba(30, 41, 59, 0.6);
+  --calc-border: rgba(255, 255, 255, 0.1);
+  --calc-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  
+  --color-profit: #10b981;
+  --color-profit-glow: rgba(16, 185, 129, 0.4);
+  --color-loss: #ef4444;
+  --color-loss-glow: rgba(239, 68, 68, 0.4);
+  --color-warning: #f59e0b;
+  
+  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+}
+
+/* =========================================
+   2. PAGE HEADER & TYPOGRAPHY
+   ========================================= */
+.calculator-page {
+  padding: 2rem 1rem;
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .calculator-page h1 {
   text-align: center;
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  font-weight: 900;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(
+  to right, 
+  #cbd5e1, 
+  #8a2be2 25%, 
+  #ff00cc 50%, 
+  #00d4ff 75%, 
+  #cbd5e1
+);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 5s linear infinite;
 }
+
+@keyframes shine {
+  to { background-position: 200% center; }
+}
+
 .calculator-page p {
   text-align: center;
   max-width: 600px;
-  margin: 0 auto 2rem auto;
-  color: var(--color-text-secondary);
+  margin: 0 auto 3rem auto;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  line-height: 1.6;
 }
 
+/* =========================================
+   3. CALCULATOR FORM (THE CARD)
+   ========================================= */
 .calculator-form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  max-width: 800px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  max-width: 900px;
   margin: 0 auto 3rem auto;
-  padding: 2rem;
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  box-shadow: var(--shadow-md);
+  padding: 2.5rem;
+  
+  /* Glassmorphism */
+  background: var(--calc-bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--calc-border);
+  border-radius: 24px;
+  box-shadow: var(--calc-shadow);
+  transition: transform 0.3s ease;
 }
 
+.calculator-form:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Form Groups */
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.8rem;
 }
 
 .form-group label {
-  font-weight: 500;
-  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a5b4fc; /* สีม่วงอ่อน */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
+/* Modern Inputs */
+.calculator-form input[type="number"],
+.calculator-form input[type="text"] {
+  width: 100%;
+  padding: 1rem 1.2rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--calc-border);
+  border-radius: 14px;
+  color: #fff;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.calculator-form input:focus {
+  outline: none;
+  border-color: #818cf8;
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.2);
+  transform: translateY(-2px);
+}
+
+/* =========================================
+   4. RESULTS SECTION
+   ========================================= */
 .results-container {
-  margin-top: 3rem;
+  margin-top: 4rem;
   width: 100%;
 }
 
-.results-container h2,
-.profit-loss-section h3 {
+/* Responsive grid for indicator/result cards */
+.indicator-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+/* Ensure chart areas are fluid on small screens */
+.chart-container {
+  width: 100%;
+  min-height: 280px;
+}
+
+.results-container h2 {
   text-align: center;
-  margin-bottom: 1.5rem;
-  color: var(--color-text-primary);
+  margin-bottom: 2rem;
+  font-size: 2rem;
+  color: #fff;
 }
 
+/* Profit / Loss Section Styling */
 .profit-loss-section {
-  margin-top: 2.5rem;
-  padding-top: 2rem;
-  border-top: 1px dashed var(--color-border);
+  margin-top: 3rem;
+  padding: 2.5rem;
+  border-radius: 24px;
+  border: 1px solid var(--calc-border);
+  background: rgba(255, 255, 255, 0.02);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.5s ease;
 }
 
-.indicator-card span {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-  margin-top: -0.5rem;
-  display: block;
+.profit-loss-section h3 {
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+  color: #fff;
+  position: relative;
+  z-index: 2;
 }
 
+/* Dynamic Themes based on Result */
+.profit-loss-section.profit {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.15) 100%);
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 40px rgba(16, 185, 129, 0.1);
+}
+
+.profit-loss-section.loss {
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.05) 0%, rgba(239, 68, 68, 0.15) 100%);
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 0 40px rgba(239, 68, 68, 0.1);
+}
+
+/* Text Colors */
 .text-success {
-  color: var(--color-success) !important;
+  color: var(--color-profit) !important;
+  text-shadow: 0 0 10px var(--color-profit-glow);
 }
 
 .text-danger {
-  color: var(--color-danger) !important;
+  color: var(--color-loss) !important;
+  text-shadow: 0 0 10px var(--color-loss-glow);
 }
 
-.profit-loss-section.profit .indicator-card::before {
-  background-color: var(--color-success);
+/* Indicator Cards (Within Results) */
+.indicator-card {
+  padding: 1rem;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  position: relative;
+  padding-left: 1.5rem;
 }
 
-.profit-loss-section.loss .indicator-card::before {
-  background-color: var(--color-danger);
+.indicator-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10%;
+  bottom: 10%;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background-color: #64748b; /* Default */
 }
 
-.indicator-card.rr-good::before {
-  background-color: var(--color-success);
+/* Risk Reward Badges */
+.indicator-card.rr-good::before { background-color: var(--color-profit); box-shadow: 0 0 10px var(--color-profit); }
+.indicator-card.rr-ok::before { background-color: var(--color-warning); box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+.indicator-card.rr-bad::before { background-color: var(--color-loss); box-shadow: 0 0 10px var(--color-loss); }
+
+.indicator-card span {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin-top: 0.2rem;
+  display: block;
 }
-.indicator-card.rr-ok::before {
-  background-color: #f59e0b; /* สีส้ม/เหลือง สำหรับค่าที่พอใช้ */
+
+/* =========================================
+   5. STOCK HISTORY FORM
+   ========================================= */
+.stock-history-form {
+  max-width: 850px;
+  margin: 4rem auto;
+  padding: 2.5rem;
+  
+  /* Glassmorphism */
+  background: var(--calc-bg-glass);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--calc-border);
+  border-radius: 24px;
+  box-shadow: var(--calc-shadow);
 }
-.indicator-card.rr-bad::before {
-  background-color: var(--color-danger);
+
+.stock-history-form h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 1.8rem;
+  background: linear-gradient(to right, #fff, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.history-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* History Inputs */
+.history-grid input[type="text"],
+.date-label input[type="date"] {
+  padding: 0.9rem 1.2rem;
+  border-radius: 14px;
+  border: 1px solid var(--calc-border);
+  background: rgba(15, 23, 42, 0.6);
+  color: #fff;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.history-grid input[type="text"]:focus,
+.date-label input[type="date"]:focus {
+  border-color: #c084fc;
+  box-shadow: 0 0 0 4px rgba(192, 132, 252, 0.2);
+  background: rgba(15, 23, 42, 0.9);
+  outline: none;
+}
+
+/* Date Range Area */
+.date-range-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.date-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #cbd5e1;
+}
+
+/* Preset Buttons */
+.preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 0.5rem;
+  justify-content: center;
+}
+
+.stock-history-form .range-button {
+  padding: 0.6rem 1.2rem;
+  border-radius: 50px;
+  border: 1px solid var(--calc-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stock-history-form .range-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.stock-history-form .range-button.active {
+  background: var(--primary-gradient);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+}
+
+/* Submit Button */
+.history-submit {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 16px;
+  background: var(--primary-gradient);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+  transition: all 0.3s ease;
+}
+
+.history-submit:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.5);
+  filter: brightness(1.1);
+}
+
+.history-submit:active {
+  transform: translateY(-1px);
+}
+
+/* =========================================
+   6. RESPONSIVE DESIGN
+   ========================================= */
+@media (max-width: 768px) {
+  .calculator-form,
+  .stock-history-form {
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
+
+  .date-range-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .profit-loss-section {
+    padding: 1.5rem;
+  }
+  
+  .history-submit {
+    margin-top: 1rem;
+  }
+}
+
+/* Make calculator form inputs stacked & full width on narrow screens */
+@media (max-width: 900px) {
+  .calculator-form {
+    grid-template-columns: 1fr !important;
+    max-width: calc(100% - 2rem);
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .calculator-form .form-group {
+    width: 100%;
+  }
+
+  .calculator-form input[type="number"],
+  .calculator-form input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Ensure action buttons (if any) stack and fill width) */
+  .calculator-form .form-actions,
+  .calculator-form .history-submit,
+  .calculator-form .primary-button {
+    width: 100%;
+    display: block;
+  }
 }

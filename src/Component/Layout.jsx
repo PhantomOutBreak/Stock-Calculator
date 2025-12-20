@@ -29,8 +29,8 @@ function Layout({ children }) {
       {isSidebarOpen && (
         <div className="sidebar-overlay" onClick={toggleSidebar} />
       )}
-      {/* เนื้อหาหลัก */}
-      <main className="layout-content">
+      {/* เนื้อหาหลัก (full-bleed เพื่อให้เพจขยายเต็ม viewport) */}
+      <main className="layout-content full-bleed">
         {children}
       </main>
     </div>

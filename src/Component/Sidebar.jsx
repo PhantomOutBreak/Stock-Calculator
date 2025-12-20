@@ -6,6 +6,7 @@ import '../css/Sidebar.css';
 const menuItems = [
   { path: '/', label: 'หน้าหลัก', icon: '🏠' },
   { path: '/about', label: 'คำนวนกำไรขาดทุน', icon: '💵' },
+  { path: '/return-calculator', label: 'คำนวนปันผลย้อนหลัง', icon: '💰' },
   { path: '/indicator', label: 'Indicator', icon: '📊' },
 ];
 

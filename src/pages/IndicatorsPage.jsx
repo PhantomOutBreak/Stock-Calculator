@@ -1,7 +1,7 @@
 // src/pages/IndicatorsPage.jsx
 
 // --- React and Library Imports ---
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ResponsiveContainer,
@@ -16,13 +16,20 @@ import {
   Legend,
   ReferenceArea,
   ReferenceDot,
-  ReferenceLine,
-  Brush
+  ReferenceLine
 } from 'recharts';
 
 // --- CSS Imports ---
 import '../css/App.css';
 import '../css/IndicatorsPage.css';
+import {
+  PRESET_RANGES,
+  getPresetRange,
+  parseISODate,
+  calculateDateRangeInDays,
+  getDefaultRange,
+  DEFAULT_PRESET_ID
+} from '../utils/dateRanges';
 
 const RSI_SETTINGS = {
   length: 14,
@@ -42,13 +49,14 @@ const RSI_SETTINGS = {
 // === SECTION 1: LOGIC & CALCULATION FUNCTIONS                  ===
 // =================================================================
 
-async function fetchStockHistory(symbol, days) {
+async function fetchStockHistory(symbol, startDate, endDate) {
   // ส่งสัญลักษณ์ตามที่ผู้ใช้กรอก (ปล่อย backend ตัดสินใจ .BK)
   const ticker = symbol.trim().toUpperCase();
-  const start = new Date();
-  start.setDate(start.getDate() - days);
-  const startStr = start.toISOString().split('T')[0];
-  const res = await fetch(`http://localhost:5000/api/stock/history/${ticker}?startDate=${startStr}`);
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  const query = params.toString();
+  const res = await fetch(`http://localhost:5000/api/stock/history/${ticker}${query ? `?${query}` : ''}`);
   if (!res.ok) {
     const err = await res.json();
     throw new Error(err.error || 'Error fetching stock history');
@@ -134,6 +142,135 @@ const calculateMACD = (data, fast = 12, slow = 26, sig = 9) => {
   return { macdLine, signalLine, histogram };
 };
 
+const calculateSqueezeMomentum = (
+  data,
+  bbLength = 20,
+  bbMultiplier = 2,
+  kcLength = 20,
+  kcMultiplier = 1.5,
+  useTrueRange = true
+) => {
+  if (!Array.isArray(data) || data.length < Math.max(bbLength, kcLength)) return [];
+
+  const n = data.length;
+  const closes = data.map(d => d.close);
+  const highs = data.map(d => d.high);
+  const lows = data.map(d => d.low);
+
+  if ([closes, highs, lows].some(arr => arr.some(v => !Number.isFinite(v)))) return [];
+
+  const trueRanges = data.map((point, idx) => {
+    const prevClose = idx > 0 ? closes[idx - 1] : closes[idx];
+    const baseRange = Math.max(point.high - point.low, 0);
+    if (!useTrueRange || idx === 0) return baseRange;
+    return Math.max(
+      baseRange,
+      Math.abs(point.high - prevClose),
+      Math.abs(point.low - prevClose)
+    );
+  });
+
+  const upperBB = new Array(n).fill(null);
+  const lowerBB = new Array(n).fill(null);
+  const upperKC = new Array(n).fill(null);
+  const lowerKC = new Array(n).fill(null);
+  const baseSeries = new Array(n).fill(null);
+
+  let sumCloseBB = 0;
+  let sumCloseSqBB = 0;
+  let sumCloseKC = 0;
+  let sumRangeKC = 0;
+
+  const sumX = kcLength * (kcLength - 1) / 2;
+  const sumX2 = kcLength * (kcLength - 1) * (2 * kcLength - 1) / 6;
+  const denom = kcLength * sumX2 - sumX * sumX || 1;
+
+  for (let i = 0; i < n; i++) {
+    const close = closes[i];
+    const tr = trueRanges[i];
+
+    sumCloseBB += close;
+    sumCloseSqBB += close * close;
+    if (i >= bbLength) {
+      const oldClose = closes[i - bbLength];
+      sumCloseBB -= oldClose;
+      sumCloseSqBB -= oldClose * oldClose;
+    }
+    if (i >= bbLength - 1) {
+      const mean = sumCloseBB / bbLength;
+      const variance = Math.max(sumCloseSqBB / bbLength - mean * mean, 0);
+      const std = Math.sqrt(variance);
+      upperBB[i] = mean + std * bbMultiplier;
+      lowerBB[i] = mean - std * bbMultiplier;
+    }
+
+    sumCloseKC += close;
+    sumRangeKC += tr;
+    if (i >= kcLength) {
+      sumCloseKC -= closes[i - kcLength];
+      sumRangeKC -= trueRanges[i - kcLength];
+    }
+
+    if (i >= kcLength - 1) {
+      const ma = sumCloseKC / kcLength;
+      const rangeMA = sumRangeKC / kcLength;
+      upperKC[i] = ma + rangeMA * kcMultiplier;
+      lowerKC[i] = ma - rangeMA * kcMultiplier;
+
+      let highest = -Infinity;
+      let lowest = Infinity;
+      for (let j = i - kcLength + 1; j <= i; j++) {
+        highest = Math.max(highest, highs[j]);
+        lowest = Math.min(lowest, lows[j]);
+      }
+      const avgHL = (highest + lowest) / 2;
+      const smaCloseKC = sumCloseKC / kcLength;
+      const offset = (avgHL + smaCloseKC) / 2;
+      baseSeries[i] = close - offset;
+    }
+  }
+
+  const result = [];
+  for (let i = kcLength - 1; i < n; i++) {
+    if (
+      baseSeries[i] == null ||
+      upperKC[i] == null ||
+      upperBB[i] == null ||
+      lowerKC[i] == null ||
+      lowerBB[i] == null
+    ) {
+      continue;
+    }
+
+    const window = baseSeries.slice(i - kcLength + 1, i + 1);
+    if (window.length !== kcLength || window.some(v => !Number.isFinite(v))) continue;
+
+    let sumY = 0;
+    let sumXY = 0;
+    for (let idx = 0; idx < kcLength; idx++) {
+      const y = window[idx];
+      sumY += y;
+      sumXY += idx * y;
+    }
+
+    const slope = (kcLength * sumXY - sumX * sumY) / denom;
+    const intercept = (sumY - slope * sumX) / kcLength;
+    const momentum = intercept + slope * (kcLength - 1);
+
+    const squeezeOn = lowerBB[i] > lowerKC[i] && upperBB[i] < upperKC[i];
+    const squeezeOff = lowerBB[i] < lowerKC[i] && upperBB[i] > upperKC[i];
+    const squeezeState = squeezeOn ? 'on' : squeezeOff ? 'off' : 'neutral';
+
+    result.push({
+      date: data[i].date,
+      momentum,
+      squeezeState
+    });
+  }
+
+  return result;
+};
+
 const calculateSD = arr => {
   const mean = arr.reduce((s, v) => s + v, 0) / arr.length;
   return Math.sqrt(arr.reduce((s, v) => s + (v - mean) ** 2, 0) / arr.length);
@@ -197,17 +334,6 @@ const calculateFibonacciRetracement = data => {
       { level: `0% (High ${high.toFixed(2)})`, value: high }
     ]
   };
-};
-
-const interpretRSI = v => {
-  if (v == null) return 'N/A';
-  if (v > 70) return 'Overbought';
-  if (v < 30) return 'Oversold';
-  return v > 50 ? 'Uptrend' : 'Downtrend';
-};
-const interpretMACD = (m, s) => {
-  if (m == null || s == null) return 'N/A';
-  return m > s ? 'Bullish' : m < s ? 'Bearish' : 'Neutral';
 };
 
 const generateMacdSignals = macd => {
@@ -490,7 +616,41 @@ const commonXAxis = (
     height={50}
   />
 );
-const commonTooltip = (
+// --- common tooltip helper: accept currency ---
+const commonTooltip = (currency) => (
+  <Tooltip
+    contentStyle={{
+      background: 'var(--color-bg-secondary)',
+      color: 'var(--color-text)',
+      borderRadius: '8px',
+      border: '1px solid var(--color-border)'
+    }}
+    labelStyle={{ color: 'var(--color-accent)', fontWeight: 'bold' }}
+    // formatter: (value, name, props) -> [formattedValueWithOptionalCurrency, seriesName]
+    formatter={(value, name, props) => {
+      const seriesName = name || '';
+      const isNumber = typeof value === 'number' && Number.isFinite(value);
+      const lower = seriesName.toLowerCase();
+      // Exclude indicator series that contain these keywords
+      const excludeKeywords = ['sma', 'ema', 'rsi', 'macd', 'histogram', 'volume', 'bb', 'bollinger', 'smoothing', 'signal'];
+      const isExcluded = excludeKeywords.some(k => lower.includes(k));
+      // Positive match for plain price series
+      const isPlainPrice = /(^|\W)(price|close|open|high|low|ราคาปิด|ราคา)(\W|$)/i.test(seriesName);
+      const isPriceSeries = !isExcluded && isPlainPrice;
+      const curLabel = currency === 'THB' ? 'บาท' : (currency || 'USD');
+      let formattedValue;
+      if (isNumber) {
+        if (isPriceSeries) formattedValue = `${value.toFixed(2)} ${curLabel}`;
+        else formattedValue = value.toFixed(2);
+      } else {
+        formattedValue = value ?? '-';
+      }
+      return [formattedValue, seriesName];
+    }}
+  />
+);
+
+const commonTooltipOld = (
   <Tooltip
     contentStyle={{
       background: 'var(--color-bg-secondary)',
@@ -525,49 +685,47 @@ function getPaddedDomain(values, padPct = 0.06, minPad = 0.01) {
 }
 
 // Price Chart
-const PriceChart = ({ data, signals, smaSignals = [], goldenDeathSignals = [], macdStrategySignals = [], fibonacci, syncId, height, padPct }) => {
-  const obos = data
+const PriceChart = React.memo(({
+  data,
+  signals,
+  smaSignals = [],
+  goldenDeathSignals = [],
+  macdStrategySignals = [],
+  fibonacci,
+  syncId,
+  height,
+  padPct,
+  wrapperClassName = '',
+  currency
+}) => {
+  const obos = useMemo(() => (data || [])
     .filter(d => d.bbUpper != null && (d.close > d.bbUpper || d.close < d.bbLower))
     .map(d => ({
       date: d.date,
       type: d.close > d.bbUpper ? 'overbought' : 'oversold',
       value: d.close
-    }));
+    })), [data]);
 
-  // Track visible X-range to drive vertical domain from visible data
-  const [viewRange, setViewRange] = React.useState([0, Math.max(0, (data?.length || 1) - 1)]);
-  React.useEffect(() => {
-    setViewRange([0, Math.max(0, (data?.length || 1) - 1)]);
-  }, [data?.length]);
-  const vs = Math.max(0, viewRange[0] ?? 0);
-  const ve = Math.min((data?.length || 1) - 1, viewRange[1] ?? ((data?.length || 1) - 1));
-  const visible = Array.isArray(data) ? data.slice(vs, ve + 1) : [];
+  const wrapperClasses = useMemo(() => ['chart-wrapper', wrapperClassName].filter(Boolean).join(' '), [wrapperClassName]);
+  const domainValues = useMemo(() => (data || []).flatMap(d => [d.close, d.bbUpper, d.bbLower, d.sma10, d.sma50, d.sma100, d.sma200]).filter(v => typeof v === 'number'), [data]);
+  const [yMin, yMax] = useMemo(() => getPaddedDomain(domainValues, padPct ?? 0.06), [domainValues, padPct]);
 
   return (
-    <div className="chart-wrapper">
+    <div className={wrapperClasses}>
       <h3>ราคาปิด, Bollinger Bands & Fibonacci</h3>
       <ResponsiveContainer width="100%" height={height || 380}>
         <ComposedChart data={data} margin={chartMargin} syncId={syncId}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
           {commonXAxis}
-          {(() => {
-            // Domain from visible data only
-            const domainValues = visible
-              .flatMap(d => [d.close, d.bbUpper, d.bbLower, d.sma10, d.sma50, d.sma100, d.sma200])
-              .filter(v => typeof v === 'number');
-            const [yMin, yMax] = getPaddedDomain(domainValues, padPct ?? 0.06);
-            return (
-              <YAxis
-                yAxisId="left"
-                tick={{ fill: '#607d8b', fontSize: 12 }}
-                domain={[yMin, yMax]}
-                allowDecimals
-                tickFormatter={formatPriceTick}
-                orientation="right"
-              />
-            );
-          })()}
-          {commonTooltip}
+          <YAxis
+            yAxisId="left"
+            tick={{ fill: '#00ff08ff', fontSize: 12 }}
+            domain={[yMin, yMax]}
+            allowDecimals
+            tickFormatter={formatPriceTick}
+            orientation="right"
+          />
+          {commonTooltip(currency)}
           <Legend />
 
           <Line yAxisId="left" dataKey="bbUpper" name="Upper BB" stroke="#1976d2" strokeDasharray="4 2" dot={false} />
@@ -583,9 +741,9 @@ const PriceChart = ({ data, signals, smaSignals = [], goldenDeathSignals = [], m
             <ReferenceLine
               yAxisId="left"
               y={data[data.length - 1].close}
-              stroke="#9e9e9e"
+              stroke="#ffffffff"
               strokeDasharray="3 3"
-              label={{ value: `Last ${formatPriceTick(data[data.length - 1].close)}`, position: 'right', fill: '#9e9e9e', fontSize: 10 }}
+              label={{ value: `Last ${formatPriceTick(data[data.length - 1].close)}`, position: 'right', fill: '#ffffffff', fontSize: 10 }}
             />
           )}
 
@@ -594,38 +752,37 @@ const PriceChart = ({ data, signals, smaSignals = [], goldenDeathSignals = [], m
               key={l.level}
               yAxisId="left"
               y={l.value}
-              stroke="#ffd54f"
+              stroke="#ffd000ff"
               strokeDasharray="4 4"
-              label={{ value: l.level, position: 'right', fontSize: 10, fill: '#a3a3a3' }}
+              label={{ value: l.level, position: 'right', fontSize: 10, fill: '#ffd000ff' }}
             />
           ))}
           {fibonacci && (
             <>
-              <ReferenceLine yAxisId="left" y={fibonacci.high} stroke="#e53935" strokeWidth={2}
-                label={{ value: 'Resistance', position: 'right', fill: '#e53935', fontSize: 12 }} />
-              <ReferenceLine yAxisId="left" y={fibonacci.low} stroke="#43a047" strokeWidth={2}
-                label={{ value: 'Support', position: 'right', fill: '#43a047', fontSize: 12 }} />
+              <ReferenceLine yAxisId="left" y={fibonacci.high} stroke="#ff0400ff" strokeWidth={2}
+                label={{ value: 'Resistance', position: 'right', fill: '#ff040004', fontSize: 12 }} />
+              <ReferenceLine yAxisId="left" y={fibonacci.low} stroke="#00ff0dff" strokeWidth={2}
+                label={{ value: 'Support', position: 'right', fill: '#00ff0d09', fontSize: 12 }} />
             </>
           )}
 
           {goldenDeathSignals.map((s, i) => {
-            if (!data.some(d => d.date === s.date)) return null;
-            const stroke = s.type === 'golden' ? '#ffd700' : '#b0bec5';
-            const labelColor = s.type === 'golden' ? '#ffb300' : '#78909c';
+            const hasPoint = data?.some(d => d.date === s.date);
+            if (!hasPoint) return null;
             return (
               <ReferenceLine
                 key={`gd-${i}-${s.date}`}
                 x={s.date}
-                stroke={stroke}
+                stroke={s.type === 'golden' ? '#ffd700' : '#b0bec5'}
                 strokeWidth={2}
                 strokeDasharray="6 4"
-                label={{ value: s.label, position: 'top', fill: labelColor, fontSize: 10 }}
+                label={{ value: s.label, position: 'top', fill: s.type === 'golden' ? '#ffb300' : '#78909c', fontSize: 10 }}
               />
             );
           })}
 
           {signals.map(s => {
-            const pt = data.find(d => d.date === s.date);
+            const pt = data?.find(d => d.date === s.date);
             if (!pt) return null;
             return (
               <ReferenceDot
@@ -642,7 +799,7 @@ const PriceChart = ({ data, signals, smaSignals = [], goldenDeathSignals = [], m
           })}
 
           {smaSignals.map((s, i) => {
-            const pt = data.find(d => d.date === s.date);
+            const pt = data?.find(d => d.date === s.date);
             if (!pt) return null;
             const isGoldenPair = s.pair === '50/200';
             const fill = isGoldenPair
@@ -667,7 +824,7 @@ const PriceChart = ({ data, signals, smaSignals = [], goldenDeathSignals = [], m
           })}
 
           {macdStrategySignals.map((s, i) => {
-            const pt = data.find(d => d.date === s.date);
+            const pt = data?.find(d => d.date === s.date);
             if (!pt) return null;
             const fill = s.type === 'buy' ? '#00c853' : '#ff3d00';
             const label = s.type === 'buy' ? 'MACD Buy' : 'MACD Sell';
@@ -697,58 +854,62 @@ const PriceChart = ({ data, signals, smaSignals = [], goldenDeathSignals = [], m
               label={{ value: o.type === 'overbought' ? 'OB' : 'OS', fill: '#fff', fontSize: 10, textAnchor: 'middle', dy: 4 }}
             />
           ))}
-          <Brush
-            dataKey="date"
-            height={28}
-            travellerWidth={8}
-            stroke="#1976d2"
-            onChange={(range) => {
-              if (!range) return;
-              const s = Math.max(0, range.startIndex || 0);
-              const e = Math.min((data?.length || 1) - 1, range.endIndex || 0);
-              setViewRange([s, e]);
-            }}
-          />
         </ComposedChart>
       </ResponsiveContainer>
     </div>
   );
-};
+});
 
 // Volume Chart
-const VolumeChart = ({ data, syncId, height }) => (
-  <div className="chart-wrapper">
-    <h3>Volume</h3>
-    <ResponsiveContainer width="101%" height={height || 260}>
-      <ComposedChart data={data} margin={chartMargin} syncId={syncId}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-        {commonXAxis}
-        <YAxis
-          tick={{ fill: '#8bc34a', fontSize: 12 }}
-          domain={[0, (max) => Math.ceil(max * 1.15)]}
-          tickFormatter={v => v.toLocaleString()}
-        />
-        {commonTooltip}
-        <Bar dataKey="volume" name="Volume" fillOpacity={0.9}>
-          {data.map((e, i) => (
-            <Cell key={i} fill={e.isUp ? 'var(--color-success)' : '#d32f2f'} />
-          ))}
-        </Bar>
-      </ComposedChart>
-    </ResponsiveContainer>
-  </div>
-);
+const VolumeChart = React.memo(({ data, syncId, height, wrapperClassName = '', currency = '' }) => {
+   const wrapperClasses = useMemo(() => ['chart-wrapper', wrapperClassName].filter(Boolean).join(' '), [wrapperClassName]);
+
+   const cells = useMemo(() => (data || []).map((e, i) => (
+     <Cell key={i} fill={e.isUp ? 'var(--color-success)' : '#d32f2f'} />
+   )), [data]);
+
+   return (
+     <div className={wrapperClasses}>
+       <h3>Volume</h3>
+       <ResponsiveContainer width="100%" height={height || 260}>
+         <ComposedChart data={data} margin={chartMargin} syncId={syncId}>
+           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+           {commonXAxis}
+           <YAxis
+             tick={{ fill: '#8bc34a', fontSize: 12 }}
+             domain={[0, (max) => Math.ceil(max * 1.15)]}
+             tickFormatter={v => v.toLocaleString()}
+           />
+          {commonTooltip(currency)}
+           <Bar dataKey="volume" name="Volume" fillOpacity={0.9}>
+             {cells}
+           </Bar>
+         </ComposedChart>
+       </ResponsiveContainer>
+     </div>
+   );
+});
 
 // RSI Chart
-const RsiChart = ({ data, signals = [], divergences = [], smoothingLabel, syncId, height }) => {
-  const hasSmoothing = Array.isArray(data) && data.some(d => Number.isFinite(d.smoothing));
-  const hasBands = Array.isArray(data) && data.some(d => Number.isFinite(d.smoothingUpper) && Number.isFinite(d.smoothingLower));
-  const smoothingName = smoothingLabel ? `RSI ${smoothingLabel}` : 'RSI MA';
+const RsiChart = React.memo(({
+  data,
+  signals = [],
+  divergences = [],
+  smoothingLabel,
+  syncId,
+  height,
+  wrapperClassName = '',
+  currency = ''
+}) => {
+   const hasSmoothing = useMemo(() => Array.isArray(data) && data.some(d => Number.isFinite(d.smoothing)), [data]);
+   const hasBands = useMemo(() => Array.isArray(data) && data.some(d => Number.isFinite(d.smoothingUpper) && Number.isFinite(d.smoothingLower)), [data]);
+   const smoothingName = smoothingLabel ? `RSI ${smoothingLabel}` : 'RSI MA';
+   const wrapperClasses = useMemo(() => ['chart-wrapper', wrapperClassName].filter(Boolean).join(' '), [wrapperClassName]);
 
-  return (
-    <div className="chart-wrapper">
+   return (
+     <div className={wrapperClasses}>
       <h3>RSI พร้อมเส้นค่าเฉลี่ย, Bollinger Bands และ Divergence</h3>
-      <ResponsiveContainer width="100%" minWidth={350} height={height || 300}>
+      <ResponsiveContainer width="100%" minWidth={280} height={height || 300}>
         <ComposedChart data={data} margin={chartMargin} syncId={syncId}>
           <defs>
             <linearGradient id="rsiMidFill" x1="0" y1="0" x2="0" y2="1">
@@ -759,7 +920,7 @@ const RsiChart = ({ data, signals = [], divergences = [], smoothingLabel, syncId
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
           {commonXAxis}
           <YAxis yAxisId="left" domain={[0, 100]} ticks={[0, 30, 50, 70, 100]} tick={{ fill: 'var(--color-text-secondary)', fontSize: 11 }} />
-          {commonTooltip}
+          {commonTooltip(currency)}
 
           {hasBands && (
             <>
@@ -832,82 +993,51 @@ const RsiChart = ({ data, signals = [], divergences = [], smoothingLabel, syncId
       </ResponsiveContainer>
     </div>
   );
-};
+});
 
-// MACD Chart
-const MacdChart = ({ data, signals, strategySignals = [], syncId, height }) => (
-  <div className="chart-wrapper">
-    <h3>MACD(12,26,9) พร้อมสัญญาณละเอียด</h3>
-    <ResponsiveContainer width="100%" minWidth={350} height={height || 1000}>
-      <ComposedChart data={data} margin={chartMargin} syncId={syncId}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-        {commonXAxis}
-        {(() => {
-          const vals = data.flatMap(d => [d.macdLine, d.signalLine, d.histogram]).filter(v => typeof v === 'number' && Number.isFinite(v));
-          const absMax = vals.length ? Math.max(...vals.map(Math.abs)) : 1;
-          const pad = absMax * 1.1;
-          return (
-            <YAxis
-              yAxisId="left"
-              tick={{ fill:'var(--color-text-secondary)',fontSize:11 }}
-              tickFormatter={v=>v.toFixed(1)}
-              width={40}
-              domain={[-pad, pad]}
-            />
-          );
-        })()}
-        {commonTooltip}
-        <Legend />
+// MACD Histogram Chart
+const MacdHistogramChart = React.memo(({ data, syncId, height, wrapperClassName = '', currency = '' }) => {
+   const chartRows = Array.isArray(data) ? data : [];
+   const values = useMemo(() => chartRows.map(d => d.histogram).filter(v => Number.isFinite(v)), [chartRows]);
+   const absMax = values.length ? Math.max(...values.map(v => Math.abs(v))) : 1;
+   const pad = useMemo(() => Math.max(absMax * 1.15, 0.5), [absMax]);
+   const wrapperClasses = useMemo(() => ['chart-wrapper', wrapperClassName].join(' '), [wrapperClassName]);
 
-        <ReferenceLine yAxisId="left" y={0} stroke="var(--color-text-secondary)" strokeDasharray="3 3" />
+   const barCells = useMemo(() => chartRows.map((row, idx) => {
+     const val = row.histogram ?? 0;
+     const prev = chartRows[idx - 1]?.histogram ?? val;
+     const rising = val >= prev;
+     const fill =
+       val >= 0
+         ? (rising ? '#18f26a' : '#0e9f47')
+         : (rising ? '#ff2f45' : '#b71c1c');
+     return <Cell key={`macd-bar-${idx}`} fill={fill} />;
+   }), [chartRows]);
 
-        <Bar yAxisId="left" dataKey="histogram" name="Histogram" fillOpacity={0.6}>
-          {data.map((e,i)=><Cell key={i} fill={e.histogram>=0? 'var(--color-success)':'var(--color-danger)'} />)}
-        </Bar>
-        <Line yAxisId="left" dataKey="macdLine" name="MACD Line" stroke="#4caf50" dot={false} />
-        <Line yAxisId="left" dataKey="signalLine" name="Signal Line" stroke="#ff7300" dot={false} />
-
-        {signals.map((s,i)=>{
-          let r=6, fill, lbl;
-          if(s.signalType==='macdCross'){ r=8; fill=s.type==='buy'? '#43a047':'#e53935'; lbl=s.type==='buy'?'M+':'M−'; }
-          else if(s.signalType==='histCross'){ fill=s.type==='buy'? '#7cb342':'#d32f2f'; lbl=s.type==='buy'?'H+':'H−'; }
-          else { fill=s.type==='buy'? '#c0ca33':'#f57c00'; lbl=s.type==='buy'?'Z+':'Z−'; }
-          return (
-            <ReferenceDot
-              key={i}
-              yAxisId="left"
-              x={s.date}
-              y={s.y}
-              r={r}
-              fill={fill}
-              stroke="#fff"
-              label={{ value: lbl, fill:'#fff',fontSize:10,textAnchor:'middle',dy:4 }}
-            />
-          );
-        })}
-
-        {strategySignals.map((s,i) => {
-          const pt = data.find(d => d.date === s.date);
-          if (!pt) return null;
-          const fill = s.type === 'buy' ? '#00c853' : '#ff3d00';
-          const label = s.type === 'buy' ? 'LE' : 'SE';
-          return (
-            <ReferenceDot
-              key={`macd-strategy-${i}`}
-              yAxisId="left"
-              x={s.date}
-              y={0}
-              r={9}
-              fill={fill}
-              stroke="#fff"
-              label={{ value: label, fill: '#fff', fontSize: 10, textAnchor: 'middle', dy: 4 }}
-            />
-          );
-        })}
-      </ComposedChart>
-    </ResponsiveContainer>
-  </div>
-);
+  return (
+    <div className={wrapperClasses}>
+      <h3>MACD Histogram</h3>
+      <ResponsiveContainer width="100%" minWidth={280} height={height || 320}>
+        <ComposedChart data={chartRows} margin={chartMargin} syncId={syncId}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+          {commonXAxis}
+          <YAxis
+            yAxisId="left"
+            tick={{ fill: 'var(--color-text-secondary)', fontSize: 11 }}
+            tickFormatter={v => (Number.isFinite(v) ? v.toFixed(2) : '')}
+            width={44}
+            domain={[-pad, pad]}
+          />
+          {commonTooltip(currency)}
+          <ReferenceLine yAxisId="left" y={0} stroke="var(--color-border)" strokeWidth={1.2} />
+          <Bar yAxisId="left" dataKey="histogram" name="MACD Histogram" barSize={8}>
+            {barCells}
+          </Bar>
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+});
 
 // =================================================================
 // === SECTION 3: MAIN PAGE COMPONENT                            ===
@@ -915,37 +1045,93 @@ const MacdChart = ({ data, signals, strategySignals = [], syncId, height }) => (
 
 export default function IndicatorsPage() {
   const [inputSymbol, setInputSymbol] = useState('');
-  const [days, setDays] = useState(90);
+  const [currency, setCurrency] = useState(''); // <-- new: currency from backend
+  const initialRangeConfig = (() => {
+    const sixMonth = getPresetRange('6m');
+    if (sixMonth) return { range: sixMonth, presetId: '6m' };
+    const threeMonth = getPresetRange('3m');
+    if (threeMonth) return { range: threeMonth, presetId: '3m' };
+    const fallback = getDefaultRange();
+    if (fallback) return { range: fallback, presetId: DEFAULT_PRESET_ID };
+    return { range: { start: '', end: '' }, presetId: null };
+  })();
+  const [startDate, setStartDate] = useState(initialRangeConfig.range.start);
+  const [endDate, setEndDate] = useState(initialRangeConfig.range.end);
+  const [selectedPreset, setSelectedPreset] = useState(initialRangeConfig.presetId);
   const [chartData, setChartData] = useState(null);
-  const [indicatorValues, setIndicatorValues] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [displayRange, setDisplayRange] = useState({ start: '', end: '' });
+
+  const dateRangeInDays = calculateDateRangeInDays(startDate, endDate);
+  const displayRangeInDays = calculateDateRangeInDays(displayRange.start, displayRange.end);
+
+  const formatDisplayDate = (isoDate) => {
+    if (!isoDate) return '-';
+    const parsed = parseISODate(isoDate);
+    if (!parsed) return '-';
+    return parsed.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
 
   // Dynamic heights by viewport
-  const [vh, setVh] = useState(typeof window !== 'undefined' ? window.innerHeight : 800);
-  useEffect(() => {
-    const onResize = () => setVh(window.innerHeight);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
   const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
   // User-adjustable scales
   const [heightScale, setHeightScale] = useState(1.0);
   const [pricePadPct, setPricePadPct] = useState(0.06); // vertical zoom: lower = zoom in
-  const priceHeight = clamp(vh * 0.42 * heightScale, 280, 640);
-  const volumeHeight = clamp(vh * 0.22 * heightScale, 160, 420);
-  const rsiHeight = clamp(vh * 0.30 * heightScale, 200, 480);
-  const macdHeight = clamp(vh * 0.30 * heightScale, 200, 480);
+  const basePriceHeight = 540;
+  const priceHeight = clamp(basePriceHeight * heightScale, 360, 860);
+  const volumeHeight = clamp(priceHeight * 0.32, 140, 340);
+  const rsiHeight = clamp(priceHeight * 0.40, 210, 420);
+  const squeezeHeight = clamp(priceHeight * 0.38, 200, 400);
 
-  const handleSubmit = async e => {
+  const abortRef = useRef(null);
+
+  const handleSubmit = useCallback(async e => {
     if (e && e.preventDefault) e.preventDefault();
+    /*...validation...*/
     setLoading(true);
     setError('');
-    try {
-      const raw = await fetchStockHistory(inputSymbol, days);
-      const sorted = raw.sort((a, b) => a.date - b.date);
-      if (sorted.length < 35) throw new Error('Data not enough (~35 days)');
 
+    // abort previous request if any
+    if (abortRef.current) {
+      try { abortRef.current.abort(); } catch (error) { /* ignore */ }
+    }
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const ticker = inputSymbol.trim().toUpperCase();
+
+      // --- New: fetch quote to detect currency from backend first ---
+      try {
+        const qRes = await fetch(`http://localhost:5000/api/stock/${ticker}`);
+        if (qRes.ok) {
+          const q = await qRes.json();
+          setCurrency(q.currency || '');
+        } else {
+          setCurrency('');
+        }
+      } catch (e) {
+        setCurrency('');
+      }
+
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      const query = params.toString();
+
+      const res = await fetch(`http://localhost:5000/api/stock/history/${ticker}${query ? `?${query}` : ''}`, { signal: controller.signal });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Error fetching stock history');
+      }
+      const raw = await res.json();
+      const normalized = raw.map(item => ({ ...item, date: new Date(item.date) }));
+      const sorted = normalized.sort((a, b) => a.date - b.date);
+      if (sorted.length < 35) throw new Error('ข้อมูลย้อนหลัวยังไม่ถึง 35 วัน');
+
+      // The rest of heavy computations are unchanged from previous implementation
+      // we keep identical calls to calculation helpers to preserve output
       const rsi       = calculateRSI(sorted, RSI_SETTINGS.length);
       const macd      = calculateMACD(sorted, 12, 26, 9);
       const bbands    = calculateBollingerBands(sorted, 20, 2);
@@ -959,7 +1145,6 @@ export default function IndicatorsPage() {
       const rsiSigs   = generateRsiSignals(rsi, rsiSmooth);
       const rsiDivs   = detectRsiDivergences(sorted, rsi, RSI_SETTINGS.divergence);
 
-      // SMA series
       const sma10     = calculateSMA(sorted, 10);
       const sma50     = calculateSMA(sorted, 50);
       const sma100    = calculateSMA(sorted, 100);
@@ -970,16 +1155,16 @@ export default function IndicatorsPage() {
       const localeOpts = { day: '2-digit', month: 'short', year: 'numeric' };
       const dateStrMap = new Map(sorted.map(d => [d.date.getTime(), d.date.toLocaleDateString('th-TH', localeOpts)]));
 
-      const mapPb   = new Map(bbands.map(d => [d.date.getTime(), d]));
-      const mapM    = new Map(macd.macdLine.map(d => [d.date.getTime(), d.value]));
-      const mapS    = new Map(macd.signalLine.map(d => [d.date.getTime(), d.value]));
+      const mapPb   = new Map((bbands || []).map(d => [d.date.getTime(), d]));
+      const mapM    = new Map((macd?.macdLine || []).map(d => [d.date.getTime(), d.value]));
+      const mapS    = new Map((macd?.signalLine || []).map(d => [d.date.getTime(), d.value]));
       const mapS10  = new Map((sma10  || []).map(d => [d.date.getTime(), d.value]));
       const mapS50  = new Map((sma50  || []).map(d => [d.date.getTime(), d.value]));
       const mapS100 = new Map((sma100 || []).map(d => [d.date.getTime(), d.value]));
       const mapS200 = new Map((sma200 || []).map(d => [d.date.getTime(), d.value]));
       const mapSFast = new Map((smaFast || []).map(d => [d.date.getTime(), d.value]));
       const mapSSlow = new Map((smaSlow || []).map(d => [d.date.getTime(), d.value]));
-      const mapHist = new Map(macd.histogram.map(d => [d.date.getTime(), d.value]));
+      const mapHist = new Map((macd?.histogram || []).map(d => [d.date.getTime(), d.value]));
       const rsiSmoothMap = new Map((rsiSmooth || []).map(d => [d.date.getTime(), d]));
 
       const priceData = sorted.map(d => {
@@ -1021,17 +1206,25 @@ export default function IndicatorsPage() {
         };
       });
 
-      const macdData = macd.histogram.map(h => {
-        const t = h.date.getTime();
-        const ds = dateStrMap.get(t);
-        return { date: ds, histogram: h.value, macdLine: mapM.get(t), signalLine: mapS.get(t) };
-      });
+      const macdData = (macd?.histogram || [])
+        .map(h => {
+          const t = h.date.getTime();
+          const ds = dateStrMap.get(t);
+          return {
+            date: ds,
+            histogram: Number.isFinite(h.value) ? h.value : 0,
+            macdLine: mapM.get(t),
+            signalLine: mapS.get(t)
+          };
+        });
 
-      const latestR = rsi.slice(-1)[0]?.value ?? null;
-      const latestM = macd.macdLine.slice(-1)[0]?.value ?? null;
-      const latestS = macd.signalLine.slice(-1)[0]?.value ?? null;
+      const squeezeRaw = calculateSqueezeMomentum(sorted);
+      const squeezeData = squeezeRaw.map(entry => ({
+        date: dateStrMap.get(entry.date.getTime()),
+        momentum: entry.momentum,
+        squeezeState: entry.squeezeState
+      }));
 
-      // MACD + SMA200 strategy signals
       const macdSmaStrategy = [];
       for (let i = 1; i < sorted.length; i++) {
         const curr = sorted[i];
@@ -1076,7 +1269,6 @@ export default function IndicatorsPage() {
         }
       }
 
-      // SMA crossover signals (bullish/bearish)
       const smaCrossRaw = [
         ...generateSmaCrossSignals(sma10, sma50, '10/50'),
         ...generateSmaCrossSignals(sma50, sma100, '50/100'),
@@ -1114,6 +1306,7 @@ export default function IndicatorsPage() {
         volume: volumeData,
         rsi: rsiData,
         macd: macdData,
+        squeeze: squeezeData,
         macdSignals: macdSigs,
         fibonacci: fib,
         rsiSignals: rsiSigs,
@@ -1130,36 +1323,86 @@ export default function IndicatorsPage() {
         goldenDeathSignals,
         macdSmaStrategy,
       });
-      setIndicatorValues({
-        rsi: latestR,
-        macdLine: latestM,
-        signalLine: latestS,
-        rsiSignal: interpretRSI(latestR),
-        macdSignal: interpretMACD(latestM, latestS),
-        macdSmaSignal: macdSmaStrategy.slice(-1)[0]?.type ?? null
-      });
+      setDisplayRange({ start: startDate, end: endDate });
     } catch (err) {
-      setError(err.message);
-      setChartData(null);
-      setIndicatorValues(null);
+      if (err.name === 'AbortError') {
+        // fetch was aborted; do not set global error
+      } else {
+        setError(err.message);
+        setChartData(null);
+      }
+    } finally {
+      setLoading(false);
+      abortRef.current = null;
     }
-    setLoading(false);
-  };
+  }, [inputSymbol, startDate, endDate, dateRangeInDays]);
 
-  useEffect(() => { handleSubmit({ preventDefault:()=>{} }); }, []);
+  useEffect(() => {
+    if (inputSymbol) {
+      handleSubmit({ preventDefault: () => {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="page-container">
-      <h1>📈 Technical Indicators Dashboard</h1>
-      <p>กรอกชื่อย่อหุ้น (ไทย/ต่างประเทศ) และจำนวนวันย้อนหลังเพื่อวิเคราะห์กราฟ</p>
+      <h1>Technical Indicators Dashboard</h1>
+      <p>กรอกชื่อย่อหุ้น (ไทย/ต่างประเทศ) และเลือกช่วงวันที่ย้อนหลังเพื่อวิเคราะห์กราฟ</p>
       <form onSubmit={handleSubmit} className="indicator-form">
         <div className="form-group">
           <label>ชื่อหุ้น:</label>
           <input type="text" value={inputSymbol} onChange={e=>setInputSymbol(e.target.value)} placeholder="เช่น PTT, AOT" required />
         </div>
-        <div className="form-group">
-          <label>จำนวนวัน:</label>
-          <input type="number" value={days} min={35} max={730} onChange={e=>setDays(+e.target.value)} required />
+        <div className="date-range-row">
+          <label className="date-label">
+            จาก
+            <input
+              type="date"
+              value={startDate}
+              max={endDate || undefined}
+              onChange={e => {
+                setStartDate(e.target.value);
+                setSelectedPreset(null);
+              }}
+              required
+            />
+          </label>
+          <label className="date-label">
+            ถึง
+            <input
+              type="date"
+              value={endDate}
+              min={startDate || undefined}
+              onChange={e => {
+                setEndDate(e.target.value);
+                setSelectedPreset(null);
+              }}
+              required
+            />
+          </label>
+        </div>
+        <div className="preset-buttons">
+          {PRESET_RANGES.map(option => (
+            <button
+              key={option.id}
+              type="button"
+              className={`range-button${selectedPreset === option.id ? ' active' : ''}`}
+              onClick={() => {
+                const range = option.getRange();
+                setStartDate(range.start);
+                setEndDate(range.end);
+                setSelectedPreset(option.id);
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <div className="range-summary notice">
+          ช่วงวันที่ที่เลือก:{' '}
+          {startDate && endDate
+            ? `${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)} (${dateRangeInDays} วัน, ต้องการ ≥ 35 วัน)`
+            : 'ยังไม่ระบุ'}
         </div>
         <button type="submit" className="primary-button" disabled={loading}>
           {loading?'กำลังคำนวณ...':'วิเคราะห์'}
@@ -1169,11 +1412,11 @@ export default function IndicatorsPage() {
       {/* Chart vertical controls */}
       <div className="chart-controls">
         <div className="control">
-          <label>ความสูงกราฟ: x{heightScale.toFixed(2)}</label>
+          <label>ความสูงกราฟหลัก: x{heightScale.toFixed(2)} (~{Math.round(priceHeight)}px)</label>
           <input
             type="range"
-            min="0.8"
-            max="2.10"
+            min="0.7"
+            max="1.5"
             step="0.05"
             value={heightScale}
             onChange={(e)=> setHeightScale(parseFloat(e.target.value))}
@@ -1193,73 +1436,54 @@ export default function IndicatorsPage() {
         <button type="button" className="primary-button reset-button" onClick={()=>{ setHeightScale(1.0); setPricePadPct(0.06); }}>รีเซ็ต</button>
       </div>
 
+      {displayRange.start && displayRange.end && (
+        <div className="analysis-range-banner">
+          วิเคราะห์ช่วง {formatDisplayDate(displayRange.start)} - {formatDisplayDate(displayRange.end)} ({displayRangeInDays} วัน)
+        </div>
+      )}
+
       {error && <div className="error-message">{error}</div>}
 
       {chartData && (
-        <div className="results-wrapper">
-          <PriceChart
-            data={chartData.price}
-            signals={chartData.macdSignals}
-            smaSignals={chartData.smaSignals}
-            goldenDeathSignals={chartData.goldenDeathSignals}
-            macdStrategySignals={chartData.macdSmaStrategy}
-            fibonacci={chartData.fibonacci}
-            syncId="sync"
-            height={priceHeight}
-            padPct={pricePadPct}
-          />
-          <VolumeChart data={chartData.volume} syncId="sync" height={volumeHeight} />
-          <RsiChart
-            data={chartData.rsi}
-            signals={chartData.rsiSignals}
-            divergences={chartData.rsiDivergences}
-            smoothingLabel={RSI_SETTINGS.smoothingType}
-            syncId="sync"
-            height={rsiHeight}
-          />
-          <MacdChart
-            data={chartData.macd}
-            signals={chartData.macdSignals}
-            strategySignals={chartData.macdSmaStrategy}
-            syncId="sync"
-            height={macdHeight}
-          />
-
-          <div className="indicators-results-container">
-            <h2>สรุปผลสำหรับ {inputSymbol.trim().toUpperCase()}</h2>
-            <div className="indicator-card-grid">
-              <div className="indicator-card signal-card rsi-signal">
-                <h3>สัญญาณ RSI</h3>
-                <p className="indicator-value">{indicatorValues.rsiSignal}</p>
-              </div>
-              <div className="indicator-card signal-card macd-signal">
-                <h3>สัญญาณ MACD</h3>
-                <p className="indicator-value">{indicatorValues.macdSignal}</p>
-              </div>
-              <div className="indicator-card">
-                <h3>RSI (14)</h3>
-                <p className="indicator-value">{indicatorValues.rsi?.toFixed(2) ?? 'N/A'}</p>
-              </div>
-              <div className="indicator-card">
-                <h3>MACD Line</h3>
-                <p className="indicator-value">{indicatorValues.macdLine?.toFixed(2) ?? 'N/A'}</p>
-              </div>
-            <div className="indicator-card">
-              <h3>Signal Line</h3>
-              <p className="indicator-value">{indicatorValues.signalLine?.toFixed(2) ?? 'N/A'}</p>
-            </div>
-            <div className="indicator-card">
-              <h3>MACD + SMA200</h3>
-              <p className="indicator-value">
-                {indicatorValues.macdSmaSignal === 'buy'
-                  ? 'Bullish Setup'
-                  : indicatorValues.macdSmaSignal === 'sell'
-                    ? 'Bearish Setup'
-                    : 'N/A'}
-              </p>
-            </div>
+        <div className="results-wrapper tradingview-layout">
+          <div className="tradingview-main">
+            <PriceChart
+              data={chartData.price}
+              signals={chartData.macdSignals}
+              smaSignals={chartData.smaSignals}
+              goldenDeathSignals={chartData.goldenDeathSignals}
+              macdStrategySignals={chartData.macdSmaStrategy}
+              fibonacci={chartData.fibonacci}
+              syncId="sync"
+              height={priceHeight}
+              padPct={pricePadPct}
+              wrapperClassName="main-chart-card"
+              currency={currency}
+             />
+            <VolumeChart
+              data={chartData.volume}
+              syncId="sync"
+              height={volumeHeight}
+              wrapperClassName="secondary-chart-card"
+              currency={currency}
+            />
+            <RsiChart
+              data={chartData.rsi}
+              signals={chartData.rsiSignals}
+              divergences={chartData.rsiDivergences}
+              smoothingLabel={RSI_SETTINGS.smoothingType}
+              syncId="sync"
+              height={rsiHeight}
+              wrapperClassName="secondary-chart-card"
+              currency={currency}
+            />            <MacdHistogramChart
+              data={chartData.macd}
+              syncId="sync"
+              height={squeezeHeight}
+              wrapperClassName="secondary-chart-card"
+              currency={currency}
+            />
           </div>
-        </div>
         </div>
       )}
 

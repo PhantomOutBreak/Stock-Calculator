@@ -1,208 +1,486 @@
 /* src/pages/HomePage.css */
 
-/* ปรับ HomePage ให้รองรับธีมมืดและดูสวยงาม */
+/* =========================================
+   1. DESIGN TOKENS & VARIABLES
+   ========================================= */
+:root {
+  /* Color Palette - Cyber Violet Theme */
+  --theme-bg-deep: #0f0c29;
+  --theme-bg-gradient: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  
+  --theme-primary: #8a2be2; /* BlueViolet */
+  --theme-accent: #ff00cc;  /* Hot Pink */
+  --theme-highlight: #00d4ff; /* Cyan */
+  
+  --theme-gradient-main: linear-gradient(135deg, var(--theme-primary), var(--theme-accent));
+  --theme-gradient-hover: linear-gradient(135deg, var(--theme-accent), var(--theme-primary));
+  
+  --glass-surface: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  
+  --text-main: #ffffff;
+  --text-muted: #d3d3d3;
+  
+  --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-/* กล่องหลักของหน้า HomePage */
+/* =========================================
+   2. PAGE LAYOUT & BACKGROUND
+   ========================================= */
 .page-container {
-    /* *** จุดนี้คือ .page-container ของแต่ละหน้า
-           แต่ใน App.css เราได้กำหนด .page-container Global ไว้แล้ว
-           ควรลบ Style ซ้ำซ้อนที่นี่ออกเพื่อไม่ให้เกิดความขัดแย้ง
-           และใช้ Style จาก App.css เป็นหลัก ***/
-    /* min-height: auto;
-    width: auto;
-    max-width: 100vw;
-    padding: 0;
-    margin: 0;
-    background: var(--color-bg-secondary, #181818);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start; */
-
-    /* ควรมีเพียง Style ที่ Overwrite หรือเพิ่มจาก App.css เท่านั้น */
-    background: var(--color-bg-secondary, #181818); /* ถ้าต้องการพื้นหลังเฉพาะหน้านี้ */
-    padding-top: clamp(40px, 10vh, 80px); /* เพิ่ม padding ด้านบนเพื่อให้หัวข้อไม่ชิดขอบ */
-    padding-bottom: clamp(40px, 10vh, 80px); /* เพิ่ม padding ด้านล่าง */
-    /* จัดกึ่งกลางเนื้อหาภายใน .page-container เหมือนเดิม */
-    justify-content: center; /* ตรงกลางแนวตั้ง */
-    align-items: center;     /* ตรงกลางแนวนอน */
-    text-align: center; /* จัด text ในหน้าให้กึ่งกลาง */
-    /* ปรับ gap เพื่อควบคุมระยะห่างระหว่างองค์ประกอบหลักภายใน */
-    gap: 1.5rem; /* ระยะห่างระหว่าง h1, p, input, buttons */
+  min-height: 100vh;
+  width: 100%;
+  padding: clamp(60px, 10vh, 100px) 20px;
+  
+  /* Animated Deep Space Background */
+  background: var(--theme-bg-gradient);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2.5rem;
+  
+  /* Font Settings */
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--text-main);
+  box-sizing: border-box;
 }
 
-/* หัวข้อหลัก */
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* =========================================
+   3. TYPOGRAPHY
+   ========================================= */
 .page-container h1 {
-    font-size: clamp(2rem, 5vw, 3.5rem); /* Responsive font size */
-    margin-bottom: 0.5rem; /* ลด margin เพื่อให้ใกล้กับ p */
-    color: var(--color-accent, #FFD700); /* สีทองเน้น (มี fallback color) */
-    font-weight: bold;
-    letter-spacing: 1px;
-    text-shadow: 0 4px 10px rgba(0,0,0,0.2); /* เพิ่มเงาให้ดูมีมิติขึ้น */
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+  line-height: 1.1;
+  
+  /* Gradient Text Effect (use Calculator header gradient) */
+  background: linear-gradient(to right, #cbd5e1, #8a2be2 25%, #ff00cc 50%, #00d4ff 75%, #cbd5e1);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 5s linear infinite;
+  
+  /* Glow Shadow */
+  filter: drop-shadow(0 0 15px rgba(138, 43, 226, 0.5));
 }
 
-/* ข้อความทั่วไป */
+@keyframes shine {
+  to { background-position: 200% center; }
+}
+
 .page-container p {
-    font-size: clamp(1rem, 2.5vw, 1.2rem); /* Responsive font size */
-    color: var(--color-text-secondary, #BBBBBB); /* สีรองจาก theme (มี fallback color) */
-    line-height: 1.6;
-    margin-bottom: 1.5rem; /* ลด margin */
-    font-weight: 500;
-    max-width: 90%; /* จำกัดความกว้างของข้อความไม่ให้กว้างเกินไปบนจอใหญ่ */
+  font-size: clamp(1.1rem, 2vw, 1.3rem);
+  color: rgb(255, 255, 255);
+  max-width: 650px;
+  line-height: 1.6;
+  font-weight: 300;
+  margin-bottom: 2rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
-/* --- Style สำหรับ Input Field --- */
-input[type="text"] {
-    width: clamp(250px, 60vw, 400px); /* Responsive width: min 250px, max 400px, ปรับตาม 60% vw */
-    padding: 0.8rem 1rem;
-    font-size: 1.1rem;
-    border: 1px solid var(--color-border, #444444); /* สีขอบตามธีม */
-    border-radius: 8px; /* มุมโค้งมน */
-    background-color: var(--color-bg-tertiary, #2a2a2a); /* สีพื้นหลังของ Input */
-    color: var(--color-text-primary, #FFD700); /* สีข้อความใน Input */
-    outline: none; /* ลบขอบสีฟ้า/ส้มเมื่อ Focus */
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: all 0.3s ease; /* เพิ่ม Transition สำหรับการเปลี่ยนแปลงที่ราบรื่น */
-}
-input[type="text"]:hover {
-    width: clamp(250px, 60vw, 400px); /* Responsive width: min 250px, max 400px, ปรับตาม 60% vw */
-    padding: 0.8rem 1rem;
-    font-size: 1.1rem;
-    border: 1px solid var(--color-border, #444444); /* สีขอบตามธีม */
-    border-radius: 8px; /* มุมโค้งมน */
-    background-color: var(--color-bg-tertiary, #ffd90064); /* สีพื้นหลังของ Input */
-    color: var(--color-text-primary, #FFD700); /* สีข้อความใน Input */
-    outline: none; /* ลบขอบสีฟ้า/ส้มเมื่อ Focus */
-    box-shadow: 0 2px 8px rgba(194, 201, 0, 0.553);
-    transition: all 0.3s ease; /* เพิ่ม Transition สำหรับการเปลี่ยนแปลงที่ราบรื่น */
-}
-input[type="number"] {
-    width: clamp(200px, 60vw, 200px); /* Responsive width: min 250px, max 400px, ปรับตาม 60% vw */
-    padding: 0.8rem 1rem;
-    font-size: 1.1rem;
-    border: 1px solid var(--color-border, #444444); /* สีขอบตามธีม */
-    border-radius: 8px; /* มุมโค้งมน */
-    background-color: var(--color-bg-tertiary, #2a2a2a); /* สีพื้นหลังของ Input */
-    color: var(--color-text-primary, #FFD700); /* สีข้อความใน Input */
-    outline: none; /* ลบขอบสีฟ้า/ส้มเมื่อ Focus */
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: all 0.3s ease; /* เพิ่ม Transition สำหรับการเปลี่ยนแปลงที่ราบรื่น */
-}
-input[type="number"]:hover {
-    width: clamp(200px, 60vw, 200px); /* Responsive width: min 250px, max 400px, ปรับตาม 60% vw */
-    padding: 0.8rem 1rem;
-    font-size: 1.1rem;
-    border: 1px solid var(--color-border, #acacac8c); /* สีขอบตามธีม */
-    border-radius: 8px; /* มุมโค้งมน */
-    background-color: var(--color-bg-tertiary, #ffd9007a); /* สีพื้นหลังของ Input */
-    color: var(--color-text-primary, #ffffff); /* สีข้อความใน Input */
-    outline: none; /* ลบขอบสีฟ้า/ส้มเมื่อ Focus */
-    box-shadow: 0 2px 8px rgba(255, 217, 0, 0.429);
-    transition: all 0.3s ergba(255, 0, 0, 0.1) /*ransition สำหรับการเปลี่ยนแปลงที่ราบรื่น */
-
+/* =========================================
+   4. FORM INPUTS & CONTROLS
+   ========================================= */
+/* Wrapper for inputs to handle grouping */
+.input-group {
+  position: relative;
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
 }
 
-input[type="text"]::placeholder {
-    color: var(--color-text-tertiary, #888888); /* สี Placeholder */
-    opacity: 0.8; /* ทำให้สีจางลงนิดหน่อย */
-}
-input[type="number"]::placeholder {
-    color: var(--color-text-tertiary, #d1b200); /* สี Placeholder */
-    opacity: 0.8; /* ทำให้สีจางลงนิดหน่อย */
-}
-
-input[type="text"]:focus {
-    border-color: var(--color-accent, #FFD700); /* เปลี่ยนสีขอบเมื่อ Focus */
-    box-shadow: 0 0 0 3px rgba(255,215,0,0.2); /* เพิ่มเงาเรืองแสงเมื่อ Focus */
-    background-color: var(--color-bg-secondary-light, #333333); /* อาจจะสว่างขึ้นนิดหน่อย */
-}
-input[type="number"]:focus {
-    border-color: var(--color-accent, #FFD700); /* เปลี่ยนสีขอบเมื่อ Focus */
-    box-shadow: 0 0 0 3px rgba(255,215,0,0.2); /* เพิ่มเงาเรืองแสงเมื่อ Focus */
-    background-color: var(--color-bg-secondary-light, #333333); /* อาจจะสว่างขึ้นนิดหน่อย */
+/* Base Input Style */
+input[type="text"],
+input[type="number"],
+input[type="date"] {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  font-size: 1.1rem;
+  
+  /* Glassmorphism Input */
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  color: var(--text-main);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s var(--ease-smooth);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
 }
 
-/* --- Style สำหรับปุ่มหลัก (ถ้ามีใน HomePage) --- */
-/* ถ้าปุ่ม 'คลิกฉัน' อยู่ใน HomePage ก็ใส่ style เพิ่มเติมที่นี่
-   ถ้าคุณใช้ Global button style ใน App.css ก็จะใช้ร่วมกันได้ */
-.page-container button {
-    background-color: var(--color-accent, #FFD700);
-    color: var(--color-bg-secondary, #181818); /* สีข้อความบนปุ่ม */
-    font-weight: bold;
-    padding: 1rem 2rem;
-    font-size: 1.2rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    cursor: pointer;
-    transition: all 0.3s ease;
+/* Input States */
+input[type="text"]:hover,
+input[type="number"]:hover,
+input[type="date"]:hover {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 0, 0, 0.3);
 }
 
-.page-container button:hover {
-    background-color: #836f00; /* สีเข้มขึ้นเมื่อ hover */
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus {
+  outline: none;
+  background: rgba(15, 12, 41, 0.8);
+  border-color: var(--theme-primary);
+  box-shadow: 
+    0 0 0 4px rgba(138, 43, 226, 0.25),
+    0 0 20px rgba(138, 43, 226, 0.4);
+  transform: translateY(-2px);
 }
 
-/* ส่วนที่รวม component ต่างๆ (ไม่น่าจะใช้ใน HomePage โดยตรงแล้ว) */
-.components-section {
-    margin-top: 40px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    border-top: 1px solid var(--color-border, #444444);
-    padding-top: 30px;
-    align-items: center;
+/* Placeholder Styling */
+input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
 }
 
-/* Container สำหรับผลลัพธ์ */
+/* Date Range Container */
+.date-range-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  margin: 2rem 0;
+  
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  backdrop-filter: blur(20px);
+  box-shadow: var(--glass-shadow);
+}
+
+.date-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  text-align: left;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--theme-highlight);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* =========================================
+   5. BUTTONS & INTERACTIVE ELEMENTS
+   ========================================= */
+/* Preset Buttons (Pills) */
+.preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.range-button {
+  padding: 0.6rem 1.2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s var(--ease-elastic);
+}
+
+.range-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.range-button.active {
+  background: var(--theme-gradient-main);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
+}
+
+/* Main Action Button (Submit) */
+button[type="submit"],
+.main-btn {
+  padding: 1.2rem 1.5rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #fff;
+  display: block;
+  margin:0 auto;
+  background: var(--theme-gradient-main);
+  background-size: 200% auto;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  
+  box-shadow: 0 10px 30px rgba(138, 43, 226, 0.3);
+  transition: all 0.4s var(--ease-elastic);
+}
+
+button[type="submit"]:hover,
+.main-btn:hover {
+  background-position: right center;
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(255, 0, 204, 0.4);
+}
+
+button[type="submit"]:active {
+  transform: translateY(-2px);
+}
+/* =========================================
+   6. RESULTS & CARDS
+   ========================================= */
 .results-container {
-  width: 100%; /* เปลี่ยนจาก 100vw เพื่อให้ปรับตาม parent container */
-  height: 200%;
-  max-width: auto; /* จำกัดความกว้างสูงสุด */
-  padding: 0 1rem; /* ปรับ padding ให้เข้ากับธีม */
-  margin-top: 2rem;
-  box-sizing: border-box; /* สำคัญ */
-  color: var(--color-text-primary, #EEEEEE); /* สีข้อความผลลัพธ์ */
-  font-size: large; /* ขนาดตัวอักษร */
-  font-weight: bold; /* ตัวหนา */
+  width: 100%;
+  max-width: 1000px;
+  margin-top: 3rem;
+  padding: 3rem;
+  
+  /* Ultra Premium Glass Card */
+  background: rgba(20, 20, 40, 0.6);
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(40px);
+  animation: slideUpFade 0.8s var(--ease-smooth);
 }
-/* สไตล์สำหรับข้อมูลหุ้นภายใน results-container */
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(50px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .results-container h2 {
-    font-size: 1.8rem;
-    color: var(--color-accent, #FFD700);
-    margin-bottom: 0.5rem;
-}
-.results-container p {
-    font-size: 1.1rem;
-    color: var(--color-text-secondary, #BBBBBB);
-    margin-bottom: 0.5rem;
-}
-.results-container p strong {
-    color: var(--color-text-primary, #EEEEEE);
+  font-size: 2.2rem;
+  margin-bottom: 2rem;
+  background: var(--theme-gradient-main);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
+.result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-/* Container สำหรับกราฟ (ถ้ามี) */
+.result-item:last-child {
+  border-bottom: none;
+}
+
+.result-label {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.result-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+/* =========================================
+   7. CHARTS & VISUALS
+   ========================================= */
 .chart-container {
   width: 100%;
-  height: 350px;
-  margin-bottom: 2rem;
-  background-color: var(--color-bg-primary, #222222); /* สีพื้นหลังสำหรับกราฟ */
-  border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  height: 500px;
+  
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+  border: 1px solid rgba(65, 0, 108, 0.447);
+  box-shadow: inset 0 0 20px rgba(65, 0, 108, 0.447);
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Responsive: ปรับ padding และขนาดบนจอเล็ก */
-@media (max-width: 600px) {
-    .page-container {
-        padding: clamp(20px, 5vw, 40px); /* ปรับ padding โดยใช้ clamp */
-        /* max-width: 98vw; -- ลบออก เพราะ width: 90% ใน App.css จัดการแล้ว */
-    }
-    .components-section {
-        padding-top: 18px;
-    }
-    .results-container {
-        padding: 0 15px; /* ลด padding ด้านข้างสำหรับจอเล็ก */
-    }
-    
+/* =========================================
+   8. RESPONSIVE DESIGN
+   ========================================= */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 80px 1.5rem;
+    gap: 2rem;
+  }
+
+  .date-range-row {
+    flex-direction: column;
+    padding: 1.5rem;
+  }
+
+  .date-label,
+  .date-label input {
+    width: 100%;
+  }
+
+  .results-container {
+    padding: 1.5rem;
+  }
+
+  .result-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .result-value {
+    align-self: flex-end;
+  }
+}
+
+/* ===== Upgraded table + range-badge for HomePage ===== */
+
+/* table card wrapper */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 1rem;
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(10,10,20,0.6);
+  border: 1px solid rgba(255,255,255,0.04);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+}
+
+/* compact, modern table */
+.stock-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.95rem;
+  min-width: 520px;
+  background: transparent;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* header */
+.stock-table thead th {
+  background: linear-gradient(90deg, rgba(138,43,226,0.98), rgba(255,0,204,0.9));
+  color: #fff;
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+}
+
+/* rows - subtle zebra + hover */
+.stock-table tbody tr {
+  background: linear-gradient(180deg, rgba(255,255,255,0.008), rgba(255,255,255,0.006));
+  transition: background 180ms ease, transform 120ms ease;
+}
+.stock-table tbody tr:nth-child(even) {
+  background: rgba(255,255,255,0.01);
+}
+.stock-table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(138,43,226,0.04), rgba(255,0,204,0.03));
+  transform: translateY(-2px);
+}
+
+/* cells */
+.stock-table td {
+  padding: 0.6rem 1rem;
+  color: var(--text-main);
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+/* date column: pill with subtle gradient and white text */
+.stock-table td:first-child {
+  width: 150px;
+  white-space: nowrap;
+  text-align: center;
+}
+.stock-table td:first-child > * {
+  display: inline-block;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(138,43,226,0.95), rgba(255,0,204,0.85));
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 14px rgba(138,43,226,0.14);
+}
+
+/* numeric cells alignment (best-effort) */
+.stock-table td:nth-child(n+2) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* responsive adjustments */
+@media (max-width: 768px) {
+  .table-container { border-radius: 10px; }
+  .stock-table thead th, .stock-table td { padding: 0.5rem 0.7rem; font-size: 0.9rem; }
+  .stock-table td:first-child > * { padding: 0.22rem 0.55rem; font-size: 0.9rem; }
+}
+
+/* ===== Range badge (right of symbol) - use theme gradient, white text ===== */
+.results-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.results-header h2 span {
+  display: inline-block;
+  background: linear-gradient(90deg, rgba(138,43,226,0.98), rgba(255,0,204,0.9));
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  -webkit-background-clip: border-box !important;
+  padding: 0.2rem 0.7rem;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(138,43,226,0.16);
+  opacity: 1 !important;
+  mix-blend-mode: normal;
+  backdrop-filter: none;
+}
+
+/* Center the range summary inside the form and style it */
+.range-summary-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.range-summary {
+  color: #fff;
+  background: linear-gradient(90deg, rgba(0, 157, 255, 0.501), rgba(255, 0, 204, 0.501), rgba(137, 43, 226, 0.501));
+  padding: 0.35rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(184, 118, 255, 0.125);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }

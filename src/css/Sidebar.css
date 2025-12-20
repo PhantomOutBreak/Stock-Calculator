@@ -1,163 +1,263 @@
 /* src/components/Sidebar.css */
 
+/* =========================================
+   1. SIDEBAR CONTAINER (GLASSMORPHISM)
+   ========================================= */
 .sidebar {
-  /* Default: Hidden on small screens, fixed position */
-  position: fixed; /* ติดขอบซ้ายสุด */
+  position: fixed;
   top: 0;
   left: 0;
-  width: 260px; /* ความกว้างของ Sidebar */
-  height: 100vh; /* สูงเต็มจอ */
-  background: linear-gradient(135deg, #182848 0%, #4b6cb7 100%);
-  color: #fff;
-  z-index: 1000; /* ให้ Sidebar อยู่บนสุด */
+  width: 280px; /* กว้างขึ้นเล็กน้อยเพื่อความโปร่ง */
+  height: 100vh;
+  z-index: 1000;
+  
+  /* Glass Effect Background */
+  background: rgba(15, 12, 41, 0.85); /* สีพื้นหลังโปร่งแสง */
+  backdrop-filter: blur(20px) saturate(180%); /* เบลอฉากหลัง */
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  
+  /* Border & Shadow */
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+  
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 16px rgba(40,62,81,0.15);
-
-  /* Animation: เลื่อนจากซ้ายไปขวา */
-  transform: translateX(-100%); /* เริ่มต้นซ่อนอยู่ทางซ้ายของจอ */
-  transition: transform 0.35s cubic-bezier(.77,0,.18,1); /* กำหนด Transition */
-  border-top-right-radius: 18px;
-  border-bottom-right-radius: 18px;
+  
+  /* Transition: Slide In/Out Smoothly */
+  transform: translateX(-100%);
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* Class เมื่อ Sidebar เปิดอยู่ */
+/* State: Open */
 .sidebar--open {
-  transform: translateX(0); /* เลื่อนเข้ามาเมื่อเปิด */
+  transform: translateX(0);
 }
 
-/* Header ภายใน Sidebar */
+/* =========================================
+   2. HEADER & LOGO
+   ========================================= */
 .sidebar-header {
-  padding: 2rem 1.5rem 1rem 2rem;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 2.5rem 2rem;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: linear-gradient(to bottom, rgba(255,255,255,0.03), transparent);
 }
 
 .sidebar-header h2 {
   margin: 0;
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 1px;
-  color: #f7ca18;
+  text-transform: uppercase;
+  
+  /* Gradient Text */
+  background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  
+  /* Neon Glow */
+  filter: drop-shadow(0 0 8px rgba(124, 58, 237, 0.5));
 }
 
-/* ปุ่มปิด Sidebar ภายใน Sidebar Header (แสดงบนมือถือ) */
+/* Close Button (Mobile) */
 .close-button {
-  background: none;
-  border: none;
-  font-size: 2em;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
+  font-size: 1.2rem;
   cursor: pointer;
-  padding: 0.2em 0.5em;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
 }
 
 .close-button:hover {
-  background: rgba(255,255,255,0.12);
+  background: rgba(239, 68, 68, 0.2); /* Red tint on hover */
+  color: #ef4444;
+  border-color: #ef4444;
+  transform: rotate(90deg);
 }
 
-/* Navigation Links */
+/* =========================================
+   3. NAVIGATION LINKS
+   ========================================= */
 .sidebar-nav {
   flex: 1;
+  padding: 2rem 1rem;
   overflow-y: auto;
-  padding: 1.5rem 0;
 }
 
 .sidebar-nav ul {
   list-style: none;
   padding: 0;
   margin: 0;
-}
-
-.sidebar-nav li {
-  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
 }
 
 .sidebar-nav a {
   display: flex;
   align-items: center;
-  padding: 0.9rem 2rem;
-  color: #fff;
-  font-size: 1.1rem;
-  border-radius: 8px 0 0 8px;
-  transition: background 0.2s, color 0.2s;
+  padding: 1rem 1.5rem;
+  color: #a0a0b0; /* Muted text */
+  font-size: 1rem;
   font-weight: 500;
+  text-decoration: none;
+  border-radius: 12px;
+  border: 1px solid transparent; /* เตรียมเส้นขอบไว้ */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
 
 .menu-icon {
-  margin-right: 14px;
-  font-size: 1.3rem;
+  margin-right: 12px;
+  font-size: 1.2rem;
+  color: #7c3aed; /* Theme Primary Color */
+  transition: transform 0.3s ease;
 }
 
-.sidebar-nav a:hover,
+/* Hover Effect */
+.sidebar-nav a:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  padding-left: 1.8rem; /* Slide text slightly */
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-nav a:hover .menu-icon {
+  transform: scale(1.2);
+  color: #22d3ee; /* Cyan highlight */
+}
+
+/* Active State (Selected Page) */
 .sidebar-nav a.active {
-  background: rgba(255,255,255,0.12);
-  color: #f7ca18;
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.2) 0%, rgba(124, 58, 237, 0.05) 100%);
+  color: #fff;
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  box-shadow: 0 0 15px rgba(124, 58, 237, 0.15);
 }
 
+.sidebar-nav a.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #22d3ee; /* Cyan accent bar */
+  box-shadow: 0 0 10px #22d3ee;
+}
+
+.sidebar-nav a.active .menu-icon {
+  color: #22d3ee;
+}
+
+/* =========================================
+   4. FOOTER
+   ========================================= */
 .sidebar-footer {
-  padding: 1rem 2rem;
-  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
   text-align: center;
-  font-size: 0.9rem;
-  color: #bbb;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.2);
 }
 
-/* --- Responsive Adjustments --- */
-
-/* Sidebar Toggle Button (สำหรับมือถือ) */
+/* =========================================
+   5. TOGGLE BUTTON (HAMBURGER)
+   ========================================= */
 .sidebar-toggle {
-  position: fixed; /* ลอยอยู่มุมซ้ายบน */
-  top: 18px;
-  left: 18px;
-  z-index: 1100; /* อยู่บน Sidebar */
-  background: #f7ca18;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 12px;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1100;
+  
+  /* Glass Button Style */
+  background: rgba(20, 20, 35, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  
+  padding: 12px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(40,62,81,0.12);
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  transition: background 0.2s;
+  gap: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
 .sidebar-toggle:hover {
-  background: #ffd700;
+  background: rgba(124, 58, 237, 0.2); /* Violet Tint */
+  border-color: rgba(124, 58, 237, 0.5);
+  transform: scale(1.05);
 }
 
 .hamburger-bar {
   width: 24px;
-  height: 3px;
-  background: #283e51;
+  height: 2px;
+  background-color: #fff;
   border-radius: 2px;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
 }
 
-/* Overlay */
+/* Animate Hamburger Bars on Hover */
+.sidebar-toggle:hover .hamburger-bar:nth-child(1) { width: 20px; }
+.sidebar-toggle:hover .hamburger-bar:nth-child(2) { width: 24px; }
+.sidebar-toggle:hover .hamburger-bar:nth-child(3) { width: 16px; }
+
+/* =========================================
+   6. OVERLAY & RESPONSIVE
+   ========================================= */
 .sidebar-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.35);
-  z-index: 1050;
+  inset: 0; /* top/left/right/bottom: 0 */
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px); /* Blur content behind */
+  z-index: 999;
+  opacity: 0;
+  animation: fadeIn 0.3s forwards;
 }
 
-/* Responsive: Sidebar overlay บนจอเล็ก, push content บนจอใหญ่ */
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+/* Desktop: Push Content */
 @media (min-width: 769px) {
+  /* ซ่อนปุ่ม Close ใน Desktop เพราะเราอาจจะใช้ Toggle แทน */
+  .sidebar .close-button {
+    display: none;
+  }
+  
+  /* Class ที่จะไปแปะที่ Main Layout เพื่อดันเนื้อหา */
   .layout-container.sidebar-open .layout-content {
-    margin-left: 260px;
-    transition: margin-left 0.35s cubic-bezier(.77,0,.18,1);
+    margin-left: 280px;
+    transition: margin-left 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
   }
 }
 
+/* Mobile: Overlay Mode */
 @media (max-width: 768px) {
   .sidebar {
-    width: 80vw;
+    width: 85vw;
     max-width: 320px;
-    border-radius: 0 18px 18px 0;
+    border-radius: 0 24px 24px 0; /* มุมมนเฉพาะด้านขวา */
+  }
+  
+  /* ถ้า Sidebar เปิดอยู่ ให้ซ่อนปุ่ม Toggle เพื่อไม่ให้รก */
+  body.has-sidebar-open .sidebar-toggle {
+    opacity: 0;
+    pointer-events: none;
   }
 }
