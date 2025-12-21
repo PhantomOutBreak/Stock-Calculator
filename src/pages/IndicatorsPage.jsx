@@ -30,6 +30,7 @@ import {
   getDefaultRange,
   DEFAULT_PRESET_ID
 } from '../utils/dateRanges';
+import { apiFetch } from '../utils/api';
 
 const RSI_SETTINGS = {
   length: 14,
@@ -50,19 +51,12 @@ const RSI_SETTINGS = {
 // =================================================================
 
 async function fetchStockHistory(symbol, startDate, endDate) {
-  // ส่งสัญลักษณ์ตามที่ผู้ใช้กรอก (ปล่อย backend ตัดสินใจ .BK)
   const ticker = symbol.trim().toUpperCase();
   const params = new URLSearchParams();
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
   const query = params.toString();
-  const res = await fetch(`http://localhost:5000/api/stock/history/${ticker}${query ? `?${query}` : ''}`);
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || 'Error fetching stock history');
-  }
-  const raw = await res.json();
-  return raw.map(item => ({ ...item, date: new Date(item.date) }));
+  return await apiFetch(`/api/stock/history/${ticker}${query ? `?${query}` : ''}`);
 }
 
 // Simple Moving Average (SMA)
@@ -1104,13 +1098,8 @@ export default function IndicatorsPage() {
 
       // --- New: fetch quote to detect currency from backend first ---
       try {
-        const qRes = await fetch(`http://localhost:5000/api/stock/${ticker}`);
-        if (qRes.ok) {
-          const q = await qRes.json();
-          setCurrency(q.currency || '');
-        } else {
-          setCurrency('');
-        }
+        const q = await apiFetch(`/api/stock/${ticker}`);
+        setCurrency(q.currency || '');
       } catch (e) {
         setCurrency('');
       }
@@ -1120,12 +1109,7 @@ export default function IndicatorsPage() {
       if (endDate) params.append('endDate', endDate);
       const query = params.toString();
 
-      const res = await fetch(`http://localhost:5000/api/stock/history/${ticker}${query ? `?${query}` : ''}`, { signal: controller.signal });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Error fetching stock history');
-      }
-      const raw = await res.json();
+      const raw = await apiFetch(`/api/stock/history/${ticker}${query ? `?${query}` : ''}`, { signal: controller.signal });
       const normalized = raw.map(item => ({ ...item, date: new Date(item.date) }));
       const sorted = normalized.sort((a, b) => a.date - b.date);
       if (sorted.length < 35) throw new Error('ข้อมูลย้อนหลัวยังไม่ถึง 35 วัน');

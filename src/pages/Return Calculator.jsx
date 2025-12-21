@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'; // นำเข้า Library หลักของ React และ Hooks สำหรับจัดการ State และ Memoization
 import '../css/App.css'; // นำเข้าไฟล์สไตล์หลักของแอป
 import '../css/ReturnCalculatorPage.css'; // นามเข้าไฟล์สไตล์เฉพาะของหน้าเครื่องคำนวณผลตอบแทน
+import { apiFetch } from '../utils/api';
 
 /* ---------------------------
    Helpers: parsing & formatters 
@@ -319,12 +320,10 @@ function ReturnCalculator() {
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', clampToTodayISO(endDate));
 
-    const url = `http://localhost:5000/api/stock/dividends/${encodeURIComponent(trimmed)}?${params.toString()}`;
+    const url = `/api/stock/dividends/${encodeURIComponent(trimmed)}?${params.toString()}`;
 
     try {
-      const resp = await fetch(url); // เรียกใช้งาน API
-      const payload = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(payload?.error || 'ไม่สามารถดึงข้อมูลได้');
+      const payload = await apiFetch(url); // เรียกใช้งาน API (apiFetch คืน parsed JSON หรือ throw)
       setResult(payload); // เก็บผลลัพธ์ลง state
       setTicker(trimmed); // อัปเดต ticker เป็นตัวใหญ่
     } catch (err) {

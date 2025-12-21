@@ -12,6 +12,7 @@ import {
   calculateDateRangeInDays,
   parseISODate
 } from '../utils/dateRanges';
+import { apiFetch } from '../utils/api';
 
 // --- Default ค่าเริ่มต้น ---
 const DEFAULT_COMMISSION = 0.00157; // ค่าคอมมิชชั่นมาตรฐาน
@@ -190,24 +191,16 @@ function CalculatorPage() {
       let detectedCurrency = '';
       let rate = 1;
       try {
-        const qRes = await fetch(`http://localhost:5000/api/stock/${t}`);
-        if (qRes.ok) {
-          const q = await qRes.json();
-          detectedCurrency = q.currency || (t.endsWith('.BK') || /^[A-Z0-9]{1,3}$/.test(t) ? 'THB' : 'USD');
-        } else {
-          detectedCurrency = (t.endsWith('.BK') || /^[A-Z0-9]{1,3}$/.test(t) ? 'THB' : 'USD');
-        }
-      } catch (err) {
+        const q = await apiFetch(`/api/stock/${t}`);
+        detectedCurrency = q.currency || (t.endsWith('.BK') || /^[A-Z0-9]{1,3}$/.test(t) ? 'THB' : 'USD');
+      } catch (e) {
         detectedCurrency = (t.endsWith('.BK') || /^[A-Z0-9]{1,3}$/.test(t) ? 'THB' : 'USD');
       }
       // 2) ถ้าเป็น USD ให้ดึงอัตรา USD->THB จาก backend
       if (detectedCurrency === 'USD') {
         try {
-          const fxRes = await fetch('http://localhost:5000/api/forex/usd-thb');
-          if (fxRes.ok) {
-            const fx = await fxRes.json();
-            rate = Number(fx.rate) || rate;
-          }
+          const fx = await apiFetch('/api/forex/usd-thb');
+          rate = Number(fx.rate) || rate;
         } catch (e) {
           // fallback keep rate = 1
         }
@@ -502,13 +495,8 @@ async function fetchStockHistory(symbol, startDate, endDate) {
   if (endDate) params.append('endDate', endDate);
   const query = params.toString();
 
-  const url = `http://localhost:5000/api/stock/history/${ticker}${query ? `?${query}` : ''}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || 'เกิดข้อผิดพลาด');
-  }
-  return await res.json();
+  const path = `/api/stock/history/${ticker}${query ? `?${query}` : ''}`;
+  return await apiFetch(path);
 }
  
 // กราฟราคาหุ้นย้อนหลัง + จุด marker (Buy/Sell/Stop)

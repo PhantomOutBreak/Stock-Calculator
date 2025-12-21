@@ -13,6 +13,7 @@ import {
   parseISODate,
   getDefaultRange
 } from '../utils/dateRanges';
+import { apiFetch } from '../utils/api';
 
 /**
  * ฟังก์ชันสำหรับดึงข้อมูลประวัติราคาหุ้นจาก Backend API
@@ -25,21 +26,8 @@ async function fetchStockHistory(symbol, startDate, endDate) {
   const params = new URLSearchParams();
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
-  
   const query = params.toString();
-  const url = `http://localhost:5000/api/stock/history/${ticker}${query ? `?${query}` : ''}`;
-
-  try {
-    const res = await fetch(url);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `Error ${res.status}: ไม่สามารถดึงข้อมูลได้`);
-    }
-    return await res.json();
-  } catch (error) {
-    console.error("Fetch error:", error);
-    throw new Error(error.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่าย');
-  }
+  return await apiFetch(`/api/stock/history/${ticker}${query ? `?${query}` : ''}`);
 }
 
 function HomePage() {
@@ -161,13 +149,8 @@ function HomePage() {
       setCurrentSymbol(cleanSymbol);
       // ดึงสกุลจาก backend ก่อน แล้ว fallback เป็น heuristic
       try {
-        const qRes = await fetch(`http://localhost:5000/api/stock/${cleanSymbol}`);
-        if (qRes.ok) {
-          const qData = await qRes.json();
-          setCurrency(qData.currency || getCurrencyForTicker(cleanSymbol));
-        } else {
-          setCurrency(getCurrencyForTicker(cleanSymbol));
-        }
+        const qData = await apiFetch(`/api/stock/${cleanSymbol}`);
+        setCurrency(qData.currency || getCurrencyForTicker(cleanSymbol));
       } catch (e) {
         setCurrency(getCurrencyForTicker(cleanSymbol));
       }
