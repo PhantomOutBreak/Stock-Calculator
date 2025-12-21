@@ -388,3 +388,56 @@
     min-width: 0;
   }
 }
+
+/* Responsive: make results-card wrap and avoid overflow */
+.results-card {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  padding: 1.25rem;
+}
+
+/* Top meta row: allow wrapping and let children shrink */
+.results-card > div:first-child {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+/* Ensure left/right blocks can shrink and not overflow */
+.results-card > div:first-child > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Keep the right-side range compact on larger screens */
+.results-card > div:first-child > div:last-child {
+  flex: 0 0 auto;
+  min-width: 160px;
+  text-align: right;
+}
+
+/* On small screens, stack and left-align the range */
+@media (max-width: 640px) {
+  .results-card {
+    padding: 0.75rem;
+  }
+  .results-card > div:first-child > div:last-child {
+    flex: 1 1 100%;
+    min-width: 0;
+    text-align: left;
+  }
+  .results-card h2 { font-size: 1.15rem; margin-bottom: 0.25rem; }
+  .results-card p { font-size: 0.95rem; }
+}
+
+/* Ensure summary cards and grid remain flexible */
+.summary-grid { width: 100%; }
+
+/* Safety: prevent horizontal overflow from inner elements */
+.results-card, .summary-grid, .dividend-table-wrapper {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
