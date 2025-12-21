@@ -5,6 +5,7 @@ import cors from 'cors';
 import yahooFinance from 'yahoo-finance2';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 // ======================================================
 // === Section 1: Configuration & Constants           ===
@@ -691,39 +692,16 @@ process.on('unhandledRejection', (reason) => {
 // ======================================================
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// 1. ตรวจสอบว่าโฟลเดอร์ public อยู่ที่ไหน
-// ถ้า public อยู่ข้างนอกโฟลเดอร์ Backend ให้เพิ่ม '..' เข้าไปแบบนี้:
-const staticPath = path.join(__dirname, '..', 'public'); 
-
-console.log('[Server] Trying to serve from:', staticPath);
-
-app.use(express.static(staticPath));
-
-app.get(/.*/, (req, res, next) => {
-    if (req.method === 'GET' && !req.path.startsWith('/api/')) {
-        // 2. ตรงนี้ต้องชี้ไปที่ไฟล์ index.html ให้ถูกที่ด้วย
-        const indexPath = path.join(staticPath, 'index.html');
-        
-        return res.sendFile(indexPath, (err) => {
-            if (err) {
-                console.error('[Server] Error: Cannot find index.html at', indexPath);
-                res.status(404).send("ไม่พบไฟล์หน้าเว็บ กรุณาตรวจสอบการวางโฟลเดอร์ public");
-            }
-        });
-    }
-    return next();
-});
-
-try {
-  // FIX: Use RegExp literal /.*/ instead of string '(.*)' to avoid "Missing parameter name" error
-  console.log(`[Server] Registering fallback route: GET /*`);
-  
-  app.get(/.*/, (req, res, next) => {
-    try {
+// serve static when present (safe guard for split-deploy)
+const staticPath = path.join(__dirname, '..', 'public');
+console.log('[Server] Static path:', staticPath);
+if (fs.existsSync(staticPath)) {
+  app.use(express.static(staticPath));
+  const indexPath = path.join(staticPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    app.get(/.*/, (req, res, next) => {
       if (req.method === 'GET' && !req.path.startsWith('/api/')) {
-        // Assuming 'index.html' is inside the 'public' folder defined above
-        return res.sendFile(path.join(__dirname, 'public', 'index.html'), (err) => {
+        return res.sendFile(indexPath, (err) => {
           if (err) {
             console.error('[Server] Error sending index.html:', err);
             next(err);
@@ -731,14 +709,13 @@ try {
         });
       }
       return next();
-    } catch (innerErr) {
-      console.error('[Server] Error in fallback handler:', innerErr);
-      next(innerErr);
-    }
-  });
-  console.log('[Server] Fallback route registered.');
-} catch (err) {
-  console.error('[Server] Failed to register fallback route:', err && err.message ? err.message : err);
+    });
+    console.log('[Server] SPA fallback registered for static build.');
+  } else {
+    console.warn('[Server] index.html not found in static path — skipping SPA fallback.');
+  }
+} else {
+  console.log('[Server] Static folder not present — skipping static serving.');
 }
 
 // Start server
