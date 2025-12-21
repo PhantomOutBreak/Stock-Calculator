@@ -313,14 +313,8 @@ const enrichCurrency = async (events) => {
 // ======================================================
 
 const app = express();
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s=>s.trim()).filter(Boolean);
-app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true); // allow server-to-server / curl
-    if (!allowedOrigins.length) return cb(null, true); // dev: allow all if not configured
-    return allowedOrigins.includes(origin) ? cb(null, true) : cb(new Error('CORS not allowed'));
-  }
-}));
+// แทนที่ CORS ปัจจุบันด้วยแบบง่าย (development / quick test)
+app.use(cors());
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -678,6 +672,20 @@ safeRegister('get', '/api/forex/usd-thb', getUsdThbRate);
 
 // --- Health check route ---
 app.get('/health', (req, res) => res.json({ ok: true, uptime: process.uptime() }));
+
+// Simple root (health / quick check)
+app.get('/', (req, res) => {
+  res.send('Backend Is Ready!');
+});
+
+// Optional test data path
+app.get('/api/stock-data', (req, res) => {
+  res.json({
+    symbol: 'PTT',
+    price: 34.50,
+    status: 'success'
+  });
+});
 
 // --- Error monitoring: uncaught exceptions & unhandled rejections
 process.on('uncaughtException', (err) => {
