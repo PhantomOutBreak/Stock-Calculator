@@ -1,3 +1,38 @@
+/**
+ * =====================================================
+ * IndicatorsPage.jsx - หน้าวิเคราะห์กราฟเทคนิคหุ้น (Technical Analysis)
+ * =====================================================
+ * 
+ * **จุดประสงค์:**
+ * หน้านี้ทำหน้าที่แสดงกราฟเทคนิคแบบครบวงจรสำหรับการวิเคราะห์หุ้น ประกอบด้วย:
+ * - กราฟราคา (Price Chart) พร้อม SMA/EMA
+ * - RSI (Relative Strength Index) พร้อม Smoothing และ Divergence Detection
+ * - MACD (Moving Average Convergence Divergence) พร้อม Histogram
+ * - Volume Chart (ปริมาณการซื้อขาย)
+ * 
+ * **โครงสร้างไฟล์:**
+ * 1. Section 1: Helper Functions (ฟังก์ชันช่วยเหลือ - parseDate, calculateDays, Presets)
+ * 2. Section 2: Calculation Functions (คำนวณ Indicators - SMA, EMA, RSI, MACD, Bollinger Bands)
+ * 3. Section 3: Main Component (IndicatorsPage)
+ *    - State Management (จัดการ State)
+ *    - Event Handlers (จัดการ Event)
+ *    - Data Processing (ประมวลผลข้อมูล)
+ *    - Rendering (แสดงผล UI)
+ * 
+ * **Technical Indicators ที่รองรับ:**
+ * - SMA (Simple Moving Average): ค่าเฉลี่ยเคลื่อนที่แบบธรรมดา
+ * - EMA (Exponential Moving Average): ค่าเฉลี่ยเคลื่อนที่แบบเลขชี้กำลัง
+ * - RSI: ดัชนีความแข็งแกร่งสัมพัทธ์ (0-100) เพื่อหาจุด Overbought/Oversold
+ * - MACD: เส้น MACD, Signal Line, และ Histogram เพื่อวิเคราะห์ Momentum
+ * - Bollinger Bands: แถบราคาบนและล่างที่คำนวณจากส่วนเบี่ยงเบนมาตรฐาน
+ * - Volume: ปริมาณการซื้อขายแต่ละวัน
+ * 
+ * **Features พิเศษ:**
+ * - Divergence Detection: ตรวจจับ RSI Divergence อัตโนมัติ (Bullish/Bearish)
+ * - Interactive Charts: ซูม, Tooltip, Crosshair
+ * - Responsive: รองรับทุกขนาดหน้าจอ
+ */
+
 // src/pages/IndicatorsPage.jsx
 // --- React & Libraries ---
 import React, { useState, useCallback, useRef, useMemo } from 'react';

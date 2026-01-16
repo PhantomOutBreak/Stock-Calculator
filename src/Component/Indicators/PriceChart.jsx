@@ -1,3 +1,27 @@
+/**
+ * =====================================================
+ * PriceChart.jsx - กราฟราคาหุ้นพร้อม Indicators
+ * =====================================================
+ * 
+ * **จุดประสงค์:**
+ * Component หลักสำหรับแสดงกราฟราคาหุ้นพร้อม Technical Indicators
+ * 
+ * **Features:**
+ * - Price Line: เส้นราคาปิดรายวัน
+ * - SMA (10, 50, 100, 200): ค่าเฉลี่ยเคลื่อนที่แบบธรรมดา
+ * - EMA (50, 100, 200): ค่าเฉลี่ยเคลื่อนที่แบบเลขชี้กำลัง
+ * - Bollinger Bands: แถบราคาบน-ล่าง (ส่วนเบี่ยงเบนมาตรฐาน)
+ * - Signals: จุดสัญญาณซื้อ/ขาย (RSI Cross, Golden/Death Cross, MACD)
+ * - Fibonacci Retracement: เส้น Fibonacci Levels
+ * - High/Low Peaks: จุดราคาสูงสุด/ต่ำสุด
+ * 
+ * **Props:**
+ * @param {Array} data - ข้อมูลราคารายวัน พร้อม Indicators
+ * @param {Array} signals - จุดสัญญาณต่างๆ
+ * @param {Object} visible - ตัวเลือกแสดง/ซ่อน Indicators
+ * @param {string} currency - สกุลเงิน (THB, USD)
+ */
+
 import React, { useMemo } from 'react';
 import {
   ResponsiveContainer, ComposedChart, Line, ReferenceLine, ReferenceDot,

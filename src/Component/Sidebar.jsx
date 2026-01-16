@@ -1,3 +1,23 @@
+/**
+ * =====================================================
+ * Sidebar.jsx - แถบเมนูด้านข้าง (Navigation Menu)
+ * =====================================================
+ * 
+ * **จุดประสงค์:**
+ * Component นี้แสดงเมนูหลักของแอปพลิเคชันในรูปแบบ Sidebar
+ * รองรับทั้ง Desktop (แสดงค้างไว้) และ Mobile (เปิด/ปิดแบบ Drawer)
+ * 
+ * **Features:**
+ * - Responsive: ปรับตัวตามขนาดหน้าจอ
+ * - Active State: ไฮไลท์เมนูที่กำลังเปิดอยู่
+ * - Overlay: พื้นหลังมืดเมื่อเปิดใน Mobile
+ * - Accessibility: รองรับ ARIA labels
+ * 
+ * **Props:**
+ * @param {boolean} isOpen - สถานะเปิด/ปิด Sidebar
+ * @param {function} onClose - Callback เมื่อต้องการปิด Sidebar
+ */
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import '../css/Sidebar.css';

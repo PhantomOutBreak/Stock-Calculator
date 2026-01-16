@@ -32,10 +32,10 @@ async function fetchStockHistory(symbol, startDate, endDate) {
 
 function HomePage() {
   // ─── 1. State Initialization ───────────────────────────────────────────────
-  
+
   // Input States
   const [inputSymbol, setInputSymbol] = useState('');
-  
+
   // Date Range Logic
   const preferredRange = getPresetRange('3m');
   const fallbackRange = preferredRange || getDefaultRange() || { start: '', end: '' };
@@ -49,7 +49,7 @@ function HomePage() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   // Display States (Snapshot ของข้อมูลที่กำลังแสดงผลอยู่)
   const [currentSymbol, setCurrentSymbol] = useState('');
   const [displayRange, setDisplayRange] = useState({ start: '', end: '' });
@@ -96,7 +96,7 @@ function HomePage() {
   const handleDateChange = (type, value) => {
     if (type === 'start') setStartDate(value);
     else setEndDate(value);
-    
+
     // เมื่อผู้ใช้เลือกวันที่เอง ให้ยกเลิกการเลือก Preset
     setSelectedPreset(null);
   };
@@ -129,31 +129,31 @@ function HomePage() {
     setError('');
 
     try {
-      const data = await fetchStockHistory(cleanSymbol, startDate, endDate);
-      
+      const response = await fetchStockHistory(cleanSymbol, startDate, endDate);
+
+      // รองรับ 2 รูปแบบ: Backend ใหม่ return { history, currency }, เก่า return []
+      const rawHistory = Array.isArray(response) ? response : (response?.history || []);
+      const apiCurrency = response?.currency || getCurrencyForTicker(cleanSymbol);
+
       // ตรวจสอบข้อมูลว่าง
-      if (!data || data.length === 0) {
+      if (!rawHistory || rawHistory.length === 0) {
         throw new Error('ไม่พบข้อมูลในช่วงเวลาที่ระบุ');
       }
 
       // Transform Data (Format Date for Chart/Table)
-      const formattedData = data.map(row => ({
+      const formattedData = rawHistory.map(row => ({
         ...row,
         // เก็บ date เดิมไว้สำหรับ sort/filter ถ้าจำเป็น แต่แสดงผลด้วย formatted string
         displayDate: formatDisplayDate(row.date),
         // แปลง date string เป็น object จริงเพื่อให้ Chart ใช้งานง่าย (ถ้า chart lib รองรับ)
-        dateObj: new Date(row.date) 
+        dateObj: new Date(row.date)
       }));
 
       setHistory(formattedData);
       setCurrentSymbol(cleanSymbol);
-      // ดึงสกุลจาก backend ก่อน แล้ว fallback เป็น heuristic
-      try {
-        const qData = await apiFetch(`/api/stock/${cleanSymbol}`);
-        setCurrency(qData.currency || getCurrencyForTicker(cleanSymbol));
-      } catch (e) {
-        setCurrency(getCurrencyForTicker(cleanSymbol));
-      }
+
+      // ใช้ currency จาก API response โดยตรง (ไม่ต้อง fetch อีกรอบ)
+      setCurrency(apiCurrency);
       setDisplayRange({ start: startDate, end: endDate });
 
     } catch (err) {
@@ -174,10 +174,10 @@ function HomePage() {
           ตรวจสอบราคาปิดย้อนหลังและวิเคราะห์แนวโน้มหุ้นไทย/ต่างประเทศ ได้ง่ายๆ เพียงปลายนิ้ว
         </p>
       </header>
-      
+
       {/* ─── Search Form Section ─── */}
       <form onSubmit={handleSubmit} className="return-form">
-        
+
         {/* Input Group: Stock Symbol */}
         <div className="input-group">
           <input
@@ -230,7 +230,7 @@ function HomePage() {
         {/* Selected Range Summary Info */}
         <div className="range-summary-wrapper">
           <p className="range-summary">
-            {formatDisplayDate(startDate)} — {formatDisplayDate(endDate)} 
+            {formatDisplayDate(startDate)} — {formatDisplayDate(endDate)}
             <span style={{ opacity: 0.6, marginLeft: '8px' }}>
               ({dateRangeInDays} วัน)
             </span>
@@ -239,9 +239,9 @@ function HomePage() {
 
         {/* Submit Action */}
         <div className="submit-group">
-          <button 
-            type="submit" 
-            className="main-btn" 
+          <button
+            type="submit"
+            className="main-btn"
             disabled={loading || !inputSymbol}
           >
             {loading ? (
@@ -264,22 +264,22 @@ function HomePage() {
       {/* เงื่อนไข: มีข้อมูลใน history และไม่ error */}
       {history.length > 0 && !error && (
         <div className={`results-container ${loading ? 'is-refetching' : ''}`}>
-          
+
           {/* Loading Overlay (Semi-transparent) */}
           {loading && (
             <div className="loading-overlay">
               <div className="spinner"></div>
             </div>
           )}
-          
+
           <div className="results-header">
             <h2>
-              {currentSymbol} 
+              {currentSymbol}
               <span style={{ fontSize: '0.6em', opacity: 0.7, marginLeft: '10px' }}>
                 ({formatDisplayDate(displayRange.start)} - {formatDisplayDate(displayRange.end)})
               </span>
             </h2>
-            
+
             <div className="result-item">
               <span className="result-label">จำนวนข้อมูล</span>
               <span className="result-value">{history.length} วันทำการ</span>
@@ -289,7 +289,7 @@ function HomePage() {
           <div className="chart-container">
             <StockChart data={history} currency={currency} />
           </div>
-          
+
           <div className="dividend-table-wrapper" style={{ marginTop: '2rem' }}>
             <h3 style={{ marginBottom: '1rem', color: 'var(--theme-highlight)' }}>ตารางราคาปิดรายวัน</h3>
             <StockTable data={history} currency={currency} />

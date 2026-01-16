@@ -1,3 +1,25 @@
+/**
+ * =====================================================
+ * RsiChart.jsx - กราฟ RSI (Relative Strength Index)
+ * =====================================================
+ * 
+ * **จุดประสงค์:**
+ * แสดงกราฟ RSI พร้อม Smoothing และ Divergence Detection
+ * 
+ * **Features:**
+ * - RSI Line: เส้น RSI (0-100)
+ * - RSI MA/Bollinger Bands: เส้นค่าเฉลี่ยและแถบ Bollinger สำหรับ RSI
+ * - Overbought/Oversold Zones: โซนสีแดง (>70) และเขียว (<30)
+ * - Bullish/Bearish Divergence: จุดสัญญาณ Divergence อัตโนมัติ
+ * - Cross Signals: จุดตัด RSI กับเส้นค่าเฉลี่ย
+ * 
+ * **Props:**
+ * @param {Array} data - ข้อมูล RSI พร้อม smoothing
+ * @param {Array} signals - จุดสัญญาณ Bullish/Bearish
+ * @param {Array} divergences - จุด Divergence
+ * @param {string} currency - สกุลเงิน
+ */
+
 import React, { useMemo } from 'react';
 import { ResponsiveContainer, ComposedChart, Line, ReferenceArea, YAxis, CartesianGrid } from 'recharts';
 import { renderCommonXAxis, commonTooltip } from './common';

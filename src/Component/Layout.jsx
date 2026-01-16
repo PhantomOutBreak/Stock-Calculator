@@ -1,3 +1,24 @@
+/**
+ * =====================================================
+ * Layout.jsx - โครงสร้างหน้าเว็บหลัก (Main Layout Wrapper)
+ * =====================================================
+ * 
+ * **จุดประสงค์:**
+ * Component นี้เป็น Wrapper หลักที่ครอบทุกหน้าของแอปพลิเคชัน
+ * จัดการโครงสร้างพื้นฐาน: Sidebar + Main Content Area
+ * 
+ * **โครงสร้าง:**
+ * ```
+ * Layout
+ * ├── Hamburger Button (Toggle Sidebar)
+ * ├── Sidebar (Navigation Menu)
+ * └── Main Content (children)
+ * ```
+ * 
+ * **Props:**
+ * @param {ReactNode} children - เนื้อหาหน้าเว็บที่จะแสดงในพื้นที่หลัก
+ */
+
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import '../css/Layout.css'; // นำเข้า CSS สำหรับ Layout
