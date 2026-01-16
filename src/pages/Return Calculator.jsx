@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react'; // นำเข้า Library 
 import '../css/App.css'; // นำเข้าไฟล์สไตล์หลักของแอป
 import '../css/ReturnCalculatorPage.css'; // นามเข้าไฟล์สไตล์เฉพาะของหน้าเครื่องคำนวณผลตอบแทน
 import { apiFetch } from '../utils/api';
+import DividendCalendar from '../Component/DividendCalendar'; // นำเข้า Component ปฏิทินปันผล
 
 /* ---------------------------
    Helpers: parsing & formatters 
@@ -183,7 +184,7 @@ function ReturnCalculator() {
         totalEvents: 0,
         totalPerShare: null,
         totalUSD: null,
-        totalTHB: null, 
+        totalTHB: null,
         avgYield: null,
         medianYield: null,
         highestYield: null,
@@ -253,7 +254,7 @@ function ReturnCalculator() {
       if (d && !Number.isNaN(d.getTime())) {
         if (!lastPayoutDate || d > lastPayoutDate) lastPayoutDate = d; // หาวันที่จ่ายล่าสุด
         if (d >= ttmStart && d <= ttmEnd && amt !== null) ttmPerShare += amt; // บวกค่าเข้า TTM
-        
+
         // เก็บข้อมูลสรุปรายปี
         const y = d.getFullYear();
         const entry = yearMap.get(y) || { perShare: 0, usd: 0, thb: 0, count: 0 };
@@ -269,10 +270,10 @@ function ReturnCalculator() {
     const avgYield = yields.length ? yields.reduce((a, b) => a + b, 0) / yields.length : null;
     const medianYield = yields.length
       ? (() => {
-          const sorted = [...yields].sort((a, b) => a - b);
-          const mid = Math.floor(sorted.length / 2);
-          return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-        })()
+        const sorted = [...yields].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      })()
       : null;
 
     // แปลง Map ข้อมูลรายปีเป็น Array เพื่อใช้แสดงในตาราง
@@ -336,23 +337,23 @@ function ReturnCalculator() {
 
   // ฟังก์ชันคัดลอกชื่อหุ้นลง Clipboard
   const copyTickerToClipboard = async () => {
-  const textToCopy = ticker || result?.resolvedTicker || result?.ticker || '';
-  
-  if (!textToCopy) {
-    console.warn("No ticker found to copy");
-    return;
-  }
+    const textToCopy = ticker || result?.resolvedTicker || result?.ticker || '';
 
-  try {
-    await navigator.clipboard.writeText(textToCopy);
-    // แจ้งเตือน user ว่าสำเร็จ (Optional)
-    // showToast("Copied to clipboard!"); 
-  } catch (err) {
-    console.error("Failed to copy ticker:", err);
-    // แจ้งเตือน user ว่าล้มเหลว (Optional)
-    // showToast("Failed to copy. Please try again.");
-  }
-};
+    if (!textToCopy) {
+      console.warn("No ticker found to copy");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      // แจ้งเตือน user ว่าสำเร็จ (Optional)
+      // showToast("Copied to clipboard!"); 
+    } catch (err) {
+      console.error("Failed to copy ticker:", err);
+      // แจ้งเตือน user ว่าล้มเหลว (Optional)
+      // showToast("Failed to copy. Please try again.");
+    }
+  };
 
   // ฟังก์ชันสร้างและดาวน์โหลดไฟล์ CSV
   const downloadCSV = () => {
@@ -406,43 +407,43 @@ function ReturnCalculator() {
         {/* ปุ่มกดต่างๆ */}
         <div className="form-actions" style={{ marginTop: 8 }}>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}>
-          <button
-            className="primary-button"
-            type="submit"
-            disabled={loading}
-            aria-disabled={loading}
-            aria-label="ดึงข้อมูลปันผล"
-          >
-            {loading ? (
-              <>
-                <Spinner size={16} /> <span style={{ marginLeft: 8 }}>กำลังดึงข้อมูล…</span>
-              </>
-            ) : (
-              'ดึงข้อมูลปันผล'
-            )}
-          </button>
+            <button
+              className="primary-button"
+              type="submit"
+              disabled={loading}
+              aria-disabled={loading}
+              aria-label="ดึงข้อมูลปันผล"
+            >
+              {loading ? (
+                <>
+                  <Spinner size={16} /> <span style={{ marginLeft: 8 }}>กำลังดึงข้อมูล…</span>
+                </>
+              ) : (
+                'ดึงข้อมูลปันผล'
+              )}
+            </button>
 
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={copyTickerToClipboard}
-            title="คัดลอกสัญลักษณ์หุ้น"
-            aria-label="คัดลอกสัญลักษณ์หุ้น"
-            style={{ padding: '0.6rem 1rem' }}
-          >
-            คัดลอกสัญลักษณ์
-          </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={copyTickerToClipboard}
+              title="คัดลอกสัญลักษณ์หุ้น"
+              aria-label="คัดลอกสัญลักษณ์หุ้น"
+              style={{ padding: '0.6rem 1rem' }}
+            >
+              คัดลอกสัญลักษณ์
+            </button>
 
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={downloadCSV}
-            title="ดาวน์โหลดรายการปันผลเป็น CSV"
-            aria-label="ดาวน์โหลด CSV"
-            style={{ padding: '0.6rem 1rem' }}
-          >
-            ดาวน์โหลด CSV
-          </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={downloadCSV}
+              title="ดาวน์โหลดรายการปันผลเป็น CSV"
+              aria-label="ดาวน์โหลด CSV"
+              style={{ padding: '0.6rem 1rem' }}
+            >
+              ดาวน์โหลด CSV
+            </button>
           </div>
         </div>
       </form>
@@ -529,6 +530,14 @@ function ReturnCalculator() {
             </div>
           </div>
 
+          {/* ปฏิทินปันผล (Dividend Calendar) */}
+          {events.length > 0 && (
+            <div className="dividend-table-wrapper" style={{ marginTop: 20 }}>
+              <h3>ปฏิทินปันผล</h3>
+              <DividendCalendar events={events} currency={summaries.currency} />
+            </div>
+          )}
+
           {/* ตารางสรุปรายปีปฏิทิน */}
           {summaries.perYear.length > 0 && (
             <div className="dividend-table-wrapper" style={{ marginTop: 20 }}>
@@ -584,9 +593,8 @@ function ReturnCalculator() {
 
                       <td>
                         {Number.isFinite(ev.priceAtEvent)
-                          ? `${formatNumber(ev.priceAtEvent, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${ev.currency || summaries.currency || ''} ${
-                              ev.priceDate ? `(${formatISODate(ev.priceDate)})` : ''
-                            }`
+                          ? `${formatNumber(ev.priceAtEvent, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${ev.currency || summaries.currency || ''} ${ev.priceDate ? `(${formatISODate(ev.priceDate)})` : ''
+                          }`
                           : '—'}
                       </td>
 

@@ -14,42 +14,56 @@ function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
 
   return (
-    // ใช้ class 'sidebar' เสมอ และเพิ่ม 'sidebar--open' เมื่อเปิด
-    <aside className={`sidebar${isOpen ? ' sidebar--open' : ''}`}>
-      {/* ส่วนหัวของ Sidebar */}
-      <div className="sidebar-header">
-        <h2>Stock Calculator</h2>
-        {/* ปุ่มปิดแสดงทุกอุปกรณ์ */}
-        <button
-          className="close-button"
-          onClick={onClose}
-          aria-label="Close Sidebar"
-        >
-          ✕
-        </button>
-      </div>
-      {/* เมนูหลัก */}
-      <nav className="sidebar-nav">
-        <ul>
-          {menuItems.map(({ path, label, icon }) => (
-            <li key={path}>
-              <Link
-                to={path}
-                className={location.pathname === path ? 'active' : ''}
-                onClick={onClose} // ปิด sidebar เมื่อคลิกเมนู
-              >
-                <span className="menu-icon">{icon}</span>
-                {label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-      {/* ส่วนท้าย */}
-      <div className="sidebar-footer">
-        <p>Version 1.0</p>
-      </div>
-    </aside>
+    // ใช้ class 'sidebar' และเพิ่ม 'open' เมื่อเปิด (ตรงกับ CSS)
+    <>
+      <div
+        className={`sidebar-overlay ${isOpen ? 'visible' : ''}`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
+        {/* ส่วนหัวของ Sidebar */}
+        <div className="sidebar-header">
+          <div className="sidebar-logo">Stock Calculator</div>
+          {/* ปุ่มปิดแสดงทุกอุปกรณ์ (ใน Mobile) */}
+          <button
+            className="close-button"
+            onClick={onClose}
+            aria-label="Close Sidebar"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              fontSize: '1.5rem',
+              cursor: 'pointer',
+              marginLeft: 'auto'
+            }}
+          >
+            ✕
+          </button>
+        </div>
+        {/* เมนูหลัก */}
+        <nav className="sidebar-nav">
+          <ul className="sidebar-menu">
+            {menuItems.map(({ path, label, icon }) => (
+              <li key={path} className="sidebar-item">
+                <Link
+                  to={path}
+                  className={`sidebar-link ${location.pathname === path ? 'active' : ''}`}
+                >
+                  <span className="sidebar-icon">{icon}</span>
+                  <span className="sidebar-label">{label}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        {/* ส่วนท้าย */}
+        <div className="sidebar-footer" style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 'auto' }}>
+          <p style={{ fontSize: '0.8rem', color: '#64748b', textAlign: 'center' }}>Version 1.5</p>
+        </div>
+      </aside>
+    </>
   );
 }
 

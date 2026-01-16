@@ -25,10 +25,7 @@ function Layout({ children }) {
       </button>
       {/* Sidebar รับ prop isOpen และ onClose */}
       <Sidebar isOpen={isSidebarOpen} onClose={toggleSidebar} />
-      {/* overlay สำหรับปิด sidebar เมื่อเปิด */}
-      {isSidebarOpen && (
-        <div className="sidebar-overlay" onClick={toggleSidebar} />
-      )}
+
       {/* เนื้อหาหลัก (full-bleed เพื่อให้เพจขยายเต็ม viewport) */}
       <main className="layout-content full-bleed">
         {children}

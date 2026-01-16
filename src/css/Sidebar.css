@@ -1,263 +1,192 @@
-/* src/components/Sidebar.css */
+/* src/css/Sidebar.css */
 
 /* =========================================
-   1. SIDEBAR CONTAINER (GLASSMORPHISM)
+   SIDEBAR NAVIGATION - PREMIUM EDITION
    ========================================= */
 .sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 280px; /* กว้างขึ้นเล็กน้อยเพื่อความโปร่ง */
-  height: 100vh;
-  z-index: 1000;
-  
-  /* Glass Effect Background */
-  background: rgba(15, 12, 41, 0.85); /* สีพื้นหลังโปร่งแสง */
-  backdrop-filter: blur(20px) saturate(180%); /* เบลอฉากหลัง */
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  
-  /* Border & Shadow */
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
-  
-  display: flex;
-  flex-direction: column;
-  
-  /* Transition: Slide In/Out Smoothly */
-  transform: translateX(-100%);
-  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 270px;
+    background: rgba(15, 23, 42, 0.85);
+    /* Slate 900 with opacity */
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid var(--color-border);
+    box-shadow: 10px 0 40px -20px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transform: translateX(-100%);
 }
 
-/* State: Open */
-.sidebar--open {
-  transform: translateX(0);
+/* Elegant radial gradient on sidebar top-left */
+.sidebar::after {
+    content: '';
+    position: absolute;
+    top: -100px;
+    left: -100px;
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: -1;
 }
 
-/* =========================================
-   2. HEADER & LOGO
-   ========================================= */
+/* Open State */
+.sidebar.open {
+    transform: translateX(0);
+}
+
 .sidebar-header {
-  padding: 2.5rem 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  background: linear-gradient(to bottom, rgba(255,255,255,0.03), transparent);
+    padding: 2.5rem 2rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
-.sidebar-header h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  
-  /* Gradient Text */
-  background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  
-  /* Neon Glow */
-  filter: drop-shadow(0 0 8px rgba(124, 58, 237, 0.5));
+.sidebar-logo {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(to right, #818cf8, #38bdf8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 30px rgba(99, 102, 241, 0.15);
 }
 
-/* Close Button (Mobile) */
 .close-button {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
-  font-size: 1.2rem;
-  cursor: pointer;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
+    display: none;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    align-items: center;
+    justify-content: center;
 }
 
 .close-button:hover {
-  background: rgba(239, 68, 68, 0.2); /* Red tint on hover */
-  color: #ef4444;
-  border-color: #ef4444;
-  transform: rotate(90deg);
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    transform: rotate(90deg);
 }
 
-/* =========================================
-   3. NAVIGATION LINKS
-   ========================================= */
 .sidebar-nav {
-  flex: 1;
-  padding: 2rem 1rem;
-  overflow-y: auto;
+    flex: 1;
+    padding: 1rem 1.5rem;
+    overflow-y: auto;
 }
 
-.sidebar-nav ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
+.sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
-.sidebar-nav a {
-  display: flex;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  color: #a0a0b0; /* Muted text */
-  font-size: 1rem;
-  font-weight: 500;
-  text-decoration: none;
-  border-radius: 12px;
-  border: 1px solid transparent; /* เตรียมเส้นขอบไว้ */
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
+.sidebar-nav ul li a {
+    /* Resetting generic anchor styles if needed, though specific classes below handle it */
 }
 
-.menu-icon {
-  margin-right: 12px;
-  font-size: 1.2rem;
-  color: #7c3aed; /* Theme Primary Color */
-  transition: transform 0.3s ease;
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem 1rem;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    border-radius: var(--radius-lg);
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
 }
 
 /* Hover Effect */
-.sidebar-nav a:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-  padding-left: 1.8rem; /* Slide text slightly */
-  border-color: rgba(255, 255, 255, 0.1);
+.sidebar-link:hover {
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.03);
 }
 
-.sidebar-nav a:hover .menu-icon {
-  transform: scale(1.2);
-  color: #22d3ee; /* Cyan highlight */
+/* Active State */
+.sidebar-link.active {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--color-primary-light);
+    border-color: rgba(99, 102, 241, 0.2);
+    box-shadow: 0 4px 12px -4px rgba(99, 102, 241, 0.25);
+    font-weight: 600;
 }
 
-/* Active State (Selected Page) */
-.sidebar-nav a.active {
-  background: linear-gradient(90deg, rgba(124, 58, 237, 0.2) 0%, rgba(124, 58, 237, 0.05) 100%);
-  color: #fff;
-  border: 1px solid rgba(124, 58, 237, 0.4);
-  box-shadow: 0 0 15px rgba(124, 58, 237, 0.15);
+.sidebar-icon {
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+    color: var(--color-text-muted);
 }
 
-.sidebar-nav a.active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: #22d3ee; /* Cyan accent bar */
-  box-shadow: 0 0 10px #22d3ee;
+.sidebar-link:hover .sidebar-icon {
+    color: var(--color-text-primary);
+    transform: scale(1.1);
 }
 
-.sidebar-nav a.active .menu-icon {
-  color: #22d3ee;
+.sidebar-link.active .sidebar-icon {
+    color: var(--color-primary-light);
 }
 
-/* =========================================
-   4. FOOTER
-   ========================================= */
+.sidebar-label {
+    flex: 1;
+}
+
+/* Footer Section */
 .sidebar-footer {
-  padding: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  text-align: center;
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.4);
-  background: rgba(0, 0, 0, 0.2);
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--color-border);
+    margin-top: auto;
 }
 
-/* =========================================
-   5. TOGGLE BUTTON (HAMBURGER)
-   ========================================= */
-.sidebar-toggle {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  z-index: 1100;
-  
-  /* Glass Button Style */
-  background: rgba(20, 20, 35, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  
-  padding: 12px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+.sidebar-footer p {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    opacity: 0.8;
 }
 
-.sidebar-toggle:hover {
-  background: rgba(124, 58, 237, 0.2); /* Violet Tint */
-  border-color: rgba(124, 58, 237, 0.5);
-  transform: scale(1.05);
+/* Scrollbar styling */
+.sidebar-nav::-webkit-scrollbar {
+    width: 4px;
 }
 
-.hamburger-bar {
-  width: 24px;
-  height: 2px;
-  background-color: #fff;
-  border-radius: 2px;
-  transition: all 0.3s ease;
-  box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+.sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
 }
 
-/* Animate Hamburger Bars on Hover */
-.sidebar-toggle:hover .hamburger-bar:nth-child(1) { width: 20px; }
-.sidebar-toggle:hover .hamburger-bar:nth-child(2) { width: 24px; }
-.sidebar-toggle:hover .hamburger-bar:nth-child(3) { width: 16px; }
-
-/* =========================================
-   6. OVERLAY & RESPONSIVE
-   ========================================= */
-.sidebar-overlay {
-  position: fixed;
-  inset: 0; /* top/left/right/bottom: 0 */
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(3px); /* Blur content behind */
-  z-index: 999;
-  opacity: 0;
-  animation: fadeIn 0.3s forwards;
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 10px;
 }
 
-@keyframes fadeIn {
-  to { opacity: 1; }
-}
-
-/* Desktop: Push Content */
-@media (min-width: 769px) {
-  /* ซ่อนปุ่ม Close ใน Desktop เพราะเราอาจจะใช้ Toggle แทน */
-  .sidebar .close-button {
-    display: none;
-  }
-  
-  /* Class ที่จะไปแปะที่ Main Layout เพื่อดันเนื้อหา */
-  .layout-container.sidebar-open .layout-content {
-    margin-left: 280px;
-    transition: margin-left 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-  }
-}
-
-/* Mobile: Overlay Mode */
+/* Responsive Logic */
 @media (max-width: 768px) {
-  .sidebar {
-    width: 85vw;
-    max-width: 320px;
-    border-radius: 0 24px 24px 0; /* มุมมนเฉพาะด้านขวา */
-  }
-  
-  /* ถ้า Sidebar เปิดอยู่ ให้ซ่อนปุ่ม Toggle เพื่อไม่ให้รก */
-  body.has-sidebar-open .sidebar-toggle {
-    opacity: 0;
-    pointer-events: none;
-  }
+    .close-button {
+        display: flex;
+    }
+
+    .sidebar {
+        width: 85%;
+        max-width: 320px;
+    }
 }

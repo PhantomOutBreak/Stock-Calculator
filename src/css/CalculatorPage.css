@@ -4,17 +4,19 @@
    1. VARIABLES & THEME SETUP
    ========================================= */
 :root {
-  --calc-bg-glass: rgba(30, 41, 59, 0.6);
+  --calc-bg-glass: rgba(15, 23, 42, 0.6);
+  /* Darker base like Sidebar */
   --calc-border: rgba(255, 255, 255, 0.1);
   --calc-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
-  
+
   --color-profit: #10b981;
   --color-profit-glow: rgba(16, 185, 129, 0.4);
   --color-loss: #ef4444;
   --color-loss-glow: rgba(239, 68, 68, 0.4);
   --color-warning: #f59e0b;
-  
-  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+
+  /* Match App/Sidebar Theme: Indigo -> Cyan -> Purple */
+  --primary-gradient: linear-gradient(135deg, rgba(99, 102, 241, 0.8), rgba(34, 211, 238, 0.8));
 }
 
 /* =========================================
@@ -26,8 +28,15 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .calculator-page h1 {
@@ -35,22 +44,13 @@
   font-size: clamp(2.2rem, 5vw, 3.5rem);
   font-weight: 900;
   margin-bottom: 0.5rem;
-  background: linear-gradient(
-  to right, 
-  #cbd5e1, 
-  #8a2be2 25%, 
-  #ff00cc 50%, 
-  #00d4ff 75%, 
-  #cbd5e1
-);
-  background-size: 200% auto;
+  letter-spacing: -1px;
+  /* Match Sidebar Logo Gradient */
+  background: linear-gradient(to right, #818cf8, #22d3ee, #a855f7);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: shine 5s linear infinite;
-}
-
-@keyframes shine {
-  to { background-position: 200% center; }
+  filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.3));
 }
 
 .calculator-page p {
@@ -72,7 +72,7 @@
   max-width: 900px;
   margin: 0 auto 3rem auto;
   padding: 2.5rem;
-  
+
   /* Glassmorphism */
   background: var(--calc-bg-glass);
   backdrop-filter: blur(16px);
@@ -99,7 +99,8 @@
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #a5b4fc; /* สีม่วงอ่อน */
+  color: #a5b4fc;
+  /* Indigo-300 */
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -112,7 +113,8 @@
   padding: 1rem 1.2rem;
   font-size: 1.1rem;
   font-weight: 500;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(255, 255, 255, 0.03);
+  /* Lighter touch */
   border: 1px solid var(--calc-border);
   border-radius: 14px;
   color: #fff;
@@ -121,9 +123,10 @@
 
 .calculator-form input:focus {
   outline: none;
-  border-color: #818cf8;
-  background: rgba(15, 23, 42, 0.9);
-  box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.2);
+  border-color: #22d3ee;
+  /* Cyan focus */
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.1);
   transform: translateY(-2px);
 }
 
@@ -204,9 +207,10 @@
 .indicator-card {
   padding: 1rem;
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.03);
   position: relative;
   padding-left: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .indicator-card::before {
@@ -217,13 +221,25 @@
   bottom: 10%;
   width: 4px;
   border-radius: 0 4px 4px 0;
-  background-color: #64748b; /* Default */
+  background-color: #64748b;
+  /* Default */
 }
 
 /* Risk Reward Badges */
-.indicator-card.rr-good::before { background-color: var(--color-profit); box-shadow: 0 0 10px var(--color-profit); }
-.indicator-card.rr-ok::before { background-color: var(--color-warning); box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
-.indicator-card.rr-bad::before { background-color: var(--color-loss); box-shadow: 0 0 10px var(--color-loss); }
+.indicator-card.rr-good::before {
+  background-color: var(--color-profit);
+  box-shadow: 0 0 10px var(--color-profit);
+}
+
+.indicator-card.rr-ok::before {
+  background-color: var(--color-warning);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+.indicator-card.rr-bad::before {
+  background-color: var(--color-loss);
+  box-shadow: 0 0 10px var(--color-loss);
+}
 
 .indicator-card span {
   font-size: 0.9rem;
@@ -237,12 +253,14 @@
    ========================================= */
 .stock-history-form {
   max-width: 850px;
-  margin: 4rem auto;
+  margin: 0 auto 3rem auto;
+  /* Was 4rem margin-top, now usually top element */
   padding: 2.5rem;
-  
+
   /* Glassmorphism */
   background: var(--calc-bg-glass);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--calc-border);
   border-radius: 24px;
   box-shadow: var(--calc-shadow);
@@ -252,9 +270,12 @@
   text-align: center;
   margin-bottom: 2rem;
   font-size: 1.8rem;
-  background: linear-gradient(to right, #fff, #c084fc);
+  /* Match Header */
+  background: linear-gradient(to right, #818cf8, #22d3ee);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.3));
 }
 
 .history-grid {
@@ -268,7 +289,7 @@
   padding: 0.9rem 1.2rem;
   border-radius: 14px;
   border: 1px solid var(--calc-border);
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(255, 255, 255, 0.03);
   color: #fff;
   font-size: 1rem;
   transition: all 0.3s ease;
@@ -277,9 +298,9 @@
 
 .history-grid input[type="text"]:focus,
 .date-label input[type="date"]:focus {
-  border-color: #c084fc;
-  box-shadow: 0 0 0 4px rgba(192, 132, 252, 0.2);
-  background: rgba(15, 23, 42, 0.9);
+  border-color: #818cf8;
+  box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.2);
+  background: rgba(255, 255, 255, 0.05);
   outline: none;
 }
 
@@ -328,10 +349,10 @@
 }
 
 .stock-history-form .range-button.active {
-  background: var(--primary-gradient);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
   color: #fff;
-  border: none;
-  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
 }
 
 /* Submit Button */
@@ -340,7 +361,7 @@
   margin-top: 1.5rem;
   padding: 1rem;
   border-radius: 16px;
-  background: var(--primary-gradient);
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: #fff;
   font-weight: 800;
   font-size: 1.1rem;
@@ -366,6 +387,7 @@
    6. RESPONSIVE DESIGN
    ========================================= */
 @media (max-width: 768px) {
+
   .calculator-form,
   .stock-history-form {
     padding: 1.5rem;
@@ -380,7 +402,7 @@
   .profit-loss-section {
     padding: 1.5rem;
   }
-  
+
   .history-submit {
     margin-top: 1rem;
   }

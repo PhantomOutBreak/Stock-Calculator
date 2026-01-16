@@ -1,130 +1,334 @@
-/* src/App.css */
+/* src/css/App.css */
 
-/* --- 1. CSS Reset / Normalize --- */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-/* --- 2. Dark Theme Variables --- */
+/* =========================================
+   1. CORE DESIGN TOKENS
+   ========================================= */
 :root {
-  --color-bg: #181c24;           /* พื้นหลังหลัก */
-  --color-bg-secondary: #232a36; /* พื้นหลังรอง */
-  --color-surface: #232a36;      /* กล่อง/พื้นหลังเนื้อหา */
-  --color-border: #232a36;
-  --color-shadow: 0 6px 24px rgba(0,0,0,0.45);
-  --color-text: #f7f7fa;         /* ตัวอักษรหลัก */
-  --color-text-secondary: #bfc9d1;
-  --color-primary: #7c4dff;      /* สีหลัก (ม่วง) */
-  --color-primary-hover: #a084ff;
-  --color-accent: #f7ca18;       /* สีเน้น (ทอง) */
-  --color-link: #7c4dff;
-  --color-link-hover: #f7ca18;
-  --color-btn-bg: #232a36;
-  --color-btn-bg-hover: #353f4e;
-  --color-btn-text: #f7ca18;
-  --color-macd-line: #00bcd4;  /* สีฟ้า Cyan */
-  --color-signal-line: #ff7300; /* สีส้ม */
+    /* Primary Colors - Refined Indigo/Violet */
+    --color-primary: #6366f1;
+    /* Indigo 500 */
+    --color-primary-light: #818cf8;
+    /* Indigo 400 */
+    --color-primary-dark: #4f46e5;
+    /* Indigo 600 */
+    --color-primary-glow: rgba(99, 102, 241, 0.5);
+
+    /* Accent Colors - Sharp Teal & Sky */
+    --color-accent: #38bdf8;
+    /* Sky 400 */
+    --color-accent-secondary: #2dd4bf;
+    /* Teal 400 */
+    --color-accent-glow: rgba(56, 189, 248, 0.5);
+
+    /* Background Colors - Deep Space/Slate */
+    --color-bg-primary: #020617;
+    /* Slate 950 */
+    --color-bg-secondary: #0f172a;
+    /* Slate 900 */
+    --color-bg-tertiary: #1e293b;
+    /* Slate 800 */
+    --color-bg-card: rgba(15, 23, 42, 0.6);
+
+    /* Text Colors */
+    --color-text-primary: #f8fafc;
+    /* Slate 50 */
+    --color-text-secondary: #cbd5e1;
+    /* Slate 300 */
+    --color-text-muted: #64748b;
+    /* Slate 500 */
+
+    /* Border Colors */
+    --color-border: rgba(255, 255, 255, 0.08);
+    --color-border-light: rgba(255, 255, 255, 0.04);
+    --color-border-hover: rgba(255, 255, 255, 0.15);
+
+    /* Status Colors */
+    --color-success: #10b981;
+    /* Emerald 500 */
+    --color-warning: #f59e0b;
+    /* Amber 500 */
+    --color-error: #ef4444;
+    /* Red 500 */
+    --color-info: #3b82f6;
+    /* Blue 500 */
+
+    /* Glassmorphism - Premium Frosted */
+    --glass-bg: rgba(15, 23, 42, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-highlight: rgba(255, 255, 255, 0.03);
+    --backdrop-blur: 16px;
+    --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
+    --card-shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+
+    /* Typography */
+    --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-full: 9999px;
+
+    /* Transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* --- 3. Global HTML/Body/Root Element Styles --- */
-html, body, #root {
-  height: 100%;
-  width: 100%;
-  min-height: 100vh;
-  --color-macd-line: #80deea;  /* สีฟ้า Cyan อ่อนลง */
-  --color-signal-line: #ffab40; /* สีส้มอ่อนลง */
+/* =========================================
+   2. GLOBAL RESET & BASE STYLES
+   ========================================= */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
 }
 
 body {
-  font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  background-color: var(--color-bg);
-  color: var(--color-text);
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    font-family: var(--font-family);
+    background-color: var(--color-bg-primary);
+    background-image:
+        radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.08) 0%, transparent 25%);
+    background-attachment: fixed;
+    color: var(--color-text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* --- 4. Layout สำหรับ React App (#root) --- */
 #root {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
-/* --- 5. Page Container Style --- */
-.page-container {
-  max-width: auto;
-  width: auto;
-  margin-top: clamp(20px, 5vh, 50px);
-  margin-bottom: clamp(20px, 5vh, 50px);
-  margin-left: auto;
-  margin-right: auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: clamp(30px, 5vw, 60px);
-  background-color: var(--color-surface);
-  border-radius: 14px;
-  box-shadow: var(--color-shadow);
-  box-sizing: border-box;
-  border: 1.5px solid var(--color-border);
+/* =========================================
+   3. TYPOGRAPHY
+   ========================================= */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--color-text-primary);
+    letter-spacing: -0.025em;
 }
 
-/* --- 6. Global Link Styles --- */
+h1 {
+    font-size: clamp(2.5rem, 5vw, 3.5rem);
+}
+
+h2 {
+    font-size: clamp(2rem, 4vw, 2.5rem);
+}
+
+h3 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+h5 {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+h6 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+p {
+    color: var(--color-text-secondary);
+    line-height: 1.7;
+}
+
 a {
-  text-decoration: none;
-  color: var(--color-link);
-  transition: color 0.3s;
+    color: var(--color-accent);
+    text-decoration: none;
+    transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: var(--color-link-hover);
-  text-decoration: underline;
+    color: var(--color-primary-light);
 }
 
-/* --- 7. Base Button Styles --- */
-button {
-  padding: 12px 25px;
-  font-size: 1.1em;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  background: var(--color-btn-bg);
-  color: var(--color-btn-text);
-  transition: background 0.3s, color 0.2s, transform 0.2s;
-  box-shadow: 0 2px 8px rgba(40,62,81,0.18);
-  font-weight: 600;
+/* =========================================
+   4. UTILITIES & ANIMATIONS
+   ========================================= */
+.text-gradient {
+    background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-accent) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
-button:hover {
-  background: var(--color-btn-bg-hover);
-  color: var(--color-accent);
-  transform: translateY(-2px) scale(1.03);
+.page-container {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--spacing-xl);
 }
 
+.flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* =========================================
+   5. BUTTONS
+   ========================================= */
 .primary-button {
-  background: var(--color-primary);
-  color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: 0.875rem 2rem;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2);
+    position: relative;
+    overflow: hidden;
 }
 
-.primary-button:hover {
-  background: var(--color-primary-hover);
-  color: var(--color-accent);
+.primary-button::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
 }
 
-/* --- 8. Responsive Adjustments for Font Sizes --- */
+.primary-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px -3px rgba(99, 102, 241, 0.3);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.primary-button:hover:not(:disabled)::after {
+    opacity: 1;
+}
+
+.primary-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(1);
+}
+
+.secondary-button {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-lg);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.secondary-button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-hover);
+}
+
+/* =========================================
+   6. CARDS & GLASSMORPHISM
+   ========================================= */
+.card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--backdrop-blur));
+    -webkit-backdrop-filter: blur(var(--backdrop-blur));
+    border: 1px solid var(--glass-border);
+    border-top-color: var(--glass-highlight);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl);
+    box-shadow: var(--card-shadow);
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: var(--card-shadow-hover);
+}
+
+/* =========================================
+   7. INPUTS
+   ========================================= */
+.input-field {
+    width: 100%;
+    padding: 0.875rem 1.25rem;
+    background: rgba(2, 6, 23, 0.4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    color: var(--color-text-primary);
+    font-size: 1rem;
+    transition: all var(--transition-fast);
+}
+
+.input-field:hover {
+    border-color: var(--color-border-hover);
+    background: rgba(2, 6, 23, 0.6);
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    background: rgba(2, 6, 23, 0.8);
+}
+
+.input-field::placeholder {
+    color: var(--color-text-muted);
+}
+
+/* =========================================
+   8. RESPONSIVE
+   ========================================= */
 @media (max-width: 768px) {
-  html {
-    font-size: 14px;
-  }
-}
-
-@media (max-width: 480px) {
-  html {
-    font-size: 13px;
-  }
+    .page-container {
+        padding: var(--spacing-md);
+    }
 }

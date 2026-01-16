@@ -186,40 +186,49 @@ function CalculatorPage() {
     }
 
     try {
-      // 1) ตรวจสกุลหุ้นจาก quote endpoint ก่อน เพื่อเตรียม FX หากจำเป็น
+      // 1) Submit ticker and dates to backend
       const t = inputSymbol.trim().toUpperCase();
-      let detectedCurrency = '';
+
+      // 2) Fetch history + currency from backend
+      // Backend now returns { history: [...], currency: 'THB' }
+      const response = await fetchStockHistory(t, startDate, endDate);
+
+      const rawHistory = Array.isArray(response) ? response : (response.history || []);
+      const apiCurrency = response.currency || (t.endsWith('.BK') ? 'THB' : 'USD');
+
+      // Update currency states
+      setOriginalCurrency(apiCurrency);
+
       let rate = 1;
-      try {
-        const q = await apiFetch(`/api/stock/${t}`);
-        detectedCurrency = q.currency || (t.endsWith('.BK') || /^[A-Z0-9]{1,3}$/.test(t) ? 'THB' : 'USD');
-      } catch (e) {
-        detectedCurrency = (t.endsWith('.BK') || /^[A-Z0-9]{1,3}$/.test(t) ? 'THB' : 'USD');
-      }
-      // 2) ถ้าเป็น USD ให้ดึงอัตรา USD->THB จาก backend
-      if (detectedCurrency === 'USD') {
+      // If original is USD, we might want to convert to THB for display
+      // But user preference might vary. For now, match existing logic:
+      // If USD, check if we need conversion.
+
+      if (apiCurrency === 'USD') {
         try {
           const fx = await apiFetch('/api/forex/usd-thb');
           rate = Number(fx.rate) || rate;
         } catch (e) {
-          // fallback keep rate = 1
+          // fallback
         }
       }
-      setOriginalCurrency(detectedCurrency);
-      // ถ้าแปลงเป็น THB ให้แสดงผลเป็น THB (UI) แต่เก็บ originalCurrency แยกไว้
-      const displayCurrency = detectedCurrency === 'USD' ? 'THB' : (detectedCurrency || 'THB');
-      setCurrency(displayCurrency);
+
       setFxRate(rate);
 
-      // 3) ดึง history แล้วแปลงราคาทุกตัวเป็น THB (เก็บ originalClose)
-      const data = await fetchStockHistory(t, startDate, endDate);
-      const converted = (Array.isArray(data) ? data : []).map(row => {
+      // Decide display currency (if USD -> show THB with conversion, else show Original)
+      // Actually existing logic forced THB if USD.
+      const displayCurrency = apiCurrency === 'USD' ? 'THB' : apiCurrency;
+      setCurrency(displayCurrency);
+
+      // 3) Convert prices if needed
+      const converted = rawHistory.map(row => {
         const orig = typeof row.close === 'number' ? Number(row.close) : null;
-        const conv = (orig !== null && detectedCurrency === 'USD') ? Number((orig * rate).toFixed(4)) : orig;
-        return { ...row, originalClose: orig, originalCurrency: detectedCurrency, close: conv };
+        const conv = (orig !== null && apiCurrency === 'USD') ? Number((orig * rate).toFixed(4)) : orig;
+        return { ...row, originalClose: orig, originalCurrency: apiCurrency, close: conv };
       });
+
       setHistory(converted);
-      if (data.length > 0) {
+      if (converted.length > 0) {
         // ตั้งราคาซื้อ/SL/TP เป็นค่าที่แปลงเป็น THB แล้ว (ถ้ามี)
         const last = converted[converted.length - 1];
         setBuyPrice(last?.close ?? '');
@@ -239,6 +248,80 @@ function CalculatorPage() {
         วางแผนการซื้อขาย, ประเมินความเสี่ยง, คำนวณ Risk/Reward, จำนวนหุ้นที่ควรซื้อ, ค่าธรรมเนียม และราคาที่ควรตั้ง Stop Loss/เป้าหมายขาย <br />
         <span style={{ color: '#f7ca18', fontWeight: 600 }}>สามารถปรับค่าธรรมเนียมและ % ความเสี่ยงได้เอง</span>
       </p>
+
+      {/* --- Stock History Form (Search UI) --- */}
+      <div className="stock-history-form">
+        <h2>ดึงข้อมูลราคาหุ้นย้อนหลัง</h2>
+        <form onSubmit={handleFetchHistory}>
+          <div className="history-grid">
+            <input
+              type="text"
+              value={inputSymbol}
+              onChange={e => setInputSymbol(e.target.value)}
+              placeholder="ชื่อหุ้น เช่น PTT"
+            />
+            <div className="date-range-row">
+              <label className="date-label">
+                จาก
+                <input
+                  type="date"
+                  value={startDate}
+                  max={endDate || undefined}
+                  onChange={e => {
+                    setStartDate(e.target.value);
+                    setSelectedPreset(null);
+                  }}
+                />
+              </label>
+              <label className="date-label">
+                ถึง
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate || undefined}
+                  onChange={e => {
+                    setEndDate(e.target.value);
+                    setSelectedPreset(null);
+                  }}
+                />
+              </label>
+            </div>
+            <div className="preset-buttons">
+              {PRESET_RANGES.map(option => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className={`range-button${selectedPreset === option.id ? ' active' : ''}`}
+                  onClick={() => {
+                    const range = option.getRange();
+                    setStartDate(range.start);
+                    setEndDate(range.end);
+                    setSelectedPreset(option.id);
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <button type="submit" className="history-submit">ดึงราคาย้อนหลัง</button>
+          </div>
+        </form>
+        {error && (
+          <div className="error-message" style={{ marginTop: 12 }}>
+            {error}
+          </div>
+        )}
+        {/* แสดงราคาปิดย้อนหลัง */}
+        {history.length > 0 && (
+          <div style={{ marginTop: 16, color: '#bfc9d1', fontSize: 14 }}>
+            ราคาปิดช่วง {formatDisplayDate(startDate)} - {formatDisplayDate(endDate)} ({dateRangeInDays} วัน):
+            {' '}
+            {history.map(d => (
+              d.originalClose != null ? `${d.originalClose} ${d.originalCurrency} → ${d.close}` : `${d.close}`
+            )).join(', ')}
+          </div>
+        )}
+      </div>
 
       {/* --- Input Form --- */}
       <div className="calculator-form">
@@ -393,89 +476,16 @@ function CalculatorPage() {
 
       {/* --- กราฟราคาหุ้นย้อนหลัง + จุด marker --- */}
       {chartData.length > 0 && (
-         <div className="chart-container" style={{ marginBottom: 32 }}>
-             <StockChartWithMarkers
-               data={chartData}
-               buyPrice={Number(parseFloat(buyPrice) || NaN)}
-               sellPrice={Number(parseFloat(sellPrice) || NaN)}
-               stopLossPrice={Number(parseFloat(stopLossPrice) || NaN)}
-               currency={currency}
-             />
-           </div>
-         )}
-      {/* --- Stock History Form --- */}
-      <div className="stock-history-form">
-        <h2>ดึงข้อมูลราคาหุ้นย้อนหลัง</h2>
-        <form onSubmit={handleFetchHistory}>
-          <div className="history-grid">
-            <input
-              type="text"
-              value={inputSymbol}
-              onChange={e => setInputSymbol(e.target.value)}
-              placeholder="ชื่อหุ้น เช่น PTT"
-            />
-            <div className="date-range-row">
-              <label className="date-label">
-                จาก
-                <input
-                  type="date"
-                  value={startDate}
-                  max={endDate || undefined}
-                  onChange={e => {
-                    setStartDate(e.target.value);
-                    setSelectedPreset(null);
-                  }}
-                />
-              </label>
-              <label className="date-label">
-                ถึง
-                <input
-                  type="date"
-                  value={endDate}
-                  min={startDate || undefined}
-                  onChange={e => {
-                    setEndDate(e.target.value);
-                    setSelectedPreset(null);
-                  }}
-                />
-              </label>
-            </div>
-            <div className="preset-buttons">
-              {PRESET_RANGES.map(option => (
-                <button
-                  key={option.id}
-                  type="button"
-                  className={`range-button${selectedPreset === option.id ? ' active' : ''}`}
-                  onClick={() => {
-                    const range = option.getRange();
-                    setStartDate(range.start);
-                    setEndDate(range.end);
-                    setSelectedPreset(option.id);
-                  }}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            <button type="submit" className="history-submit">ดึงราคาย้อนหลัง</button>
-          </div>
-        </form>
-        {error && (
-          <div className="error-message" style={{ marginTop: 12 }}>
-            {error}
-          </div>
-        )}
-        {/* แสดงราคาปิดย้อนหลัง */}
-        {history.length > 0 && (
-          <div style={{ marginTop: 16, color: '#bfc9d1', fontSize: 14 }}>
-            ราคาปิดช่วง {formatDisplayDate(startDate)} - {formatDisplayDate(endDate)} ({dateRangeInDays} วัน):
-            {' '}
-            {history.map(d => (
-              d.originalClose != null ? `${d.originalClose} ${d.originalCurrency} → ${d.close}` : `${d.close}`
-            )).join(', ')}
-          </div>
-        )}
-      </div>
+        <div className="chart-container" style={{ marginBottom: 32 }}>
+          <StockChartWithMarkers
+            data={chartData}
+            buyPrice={Number(parseFloat(buyPrice) || NaN)}
+            sellPrice={Number(parseFloat(sellPrice) || NaN)}
+            stopLossPrice={Number(parseFloat(stopLossPrice) || NaN)}
+            currency={currency}
+          />
+        </div>
+      )}
 
       {/* ปุ่มกลับหน้าหลัก */}
       <Link to="/" className="primary-button back-button">กลับสู่หน้าหลัก</Link>
@@ -498,69 +508,69 @@ async function fetchStockHistory(symbol, startDate, endDate) {
   const path = `/api/stock/history/${ticker}${query ? `?${query}` : ''}`;
   return await apiFetch(path);
 }
- 
+
 // กราฟราคาหุ้นย้อนหลัง + จุด marker (Buy/Sell/Stop)
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceDot } from 'recharts';
 
 function StockChartWithMarkers({ data, buyPrice, sellPrice, stopLossPrice, currency = 'THB' }) {
-   return (
-     <ResponsiveContainer width="100%" height={350}>
-       <LineChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-         <XAxis dataKey="date" tick={{ fill: 'var(--color-text-secondary)', fontSize: 12 }} />
-         <YAxis
-           tick={{ fill: 'var(--color-text-secondary)', fontSize: 12 }}
-           domain={['auto', 'auto']}
-           tickFormatter={value => (typeof value === 'number' ? value.toFixed(0) : '')}
-         />
-         <Tooltip
-           contentStyle={{
-             background: 'var(--color-bg-secondary)',
-             color: 'var(--color-text)',
-             borderRadius: '8px',
-             border: '1px solid var(--color-border)'
-           }}
-           labelStyle={{ color: 'var(--color-accent)', fontWeight: 'bold' }}
-           formatter={(value) => {
-             const curLabel = currency === 'THB' ? 'บาท' : (currency || 'USD');
-             return typeof value === 'number' ? [`${value.toFixed(2)} ${curLabel}`, 'ราคาปิด'] : ['-', 'ราคาปิด'];
-           }}
-         />
-         <Line type="monotone" dataKey="close" stroke="var(--color-accent)" strokeWidth={2.5} dot={false} />
-         {/* จุดซื้อ */}
-         {Number.isFinite(buyPrice) && (
-           <ReferenceDot
-             x={data.find(d => Math.abs((d.close||0) - buyPrice) < 1e-6)?.date}
-             y={buyPrice}
-             r={8}
-             fill="#4caf50"
-             stroke="#fff"
-             label="ซื้อ"
-           />
-         )}
-         {/* จุดขาย */}
-         {Number.isFinite(sellPrice) && (
-           <ReferenceDot
-             x={data.find(d => Math.abs((d.close||0) - sellPrice) < 1e-6)?.date}
-             y={sellPrice}
-             r={8}
-             fill="#f7ca18"
-             stroke="#fff"
-             label="ขาย"
-           />
-         )}
-         {/* จุด Stop Loss */}
-         {Number.isFinite(stopLossPrice) && (
-           <ReferenceDot
-             x={data.find(d => Math.abs((d.close||0) - stopLossPrice) < 1e-6)?.date}
-             y={stopLossPrice}
-             r={8}
-             fill="#d32f2f"
-             stroke="#fff"
-             label="SL"
-           />
-         )}
-       </LineChart>
-     </ResponsiveContainer>
-   );
+  return (
+    <ResponsiveContainer width="100%" height={350}>
+      <LineChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+        <XAxis dataKey="date" tick={{ fill: 'var(--color-text-secondary)', fontSize: 12 }} />
+        <YAxis
+          tick={{ fill: 'var(--color-text-secondary)', fontSize: 12 }}
+          domain={['auto', 'auto']}
+          tickFormatter={value => (typeof value === 'number' ? value.toFixed(0) : '')}
+        />
+        <Tooltip
+          contentStyle={{
+            background: 'var(--color-bg-secondary)',
+            color: 'var(--color-text)',
+            borderRadius: '8px',
+            border: '1px solid var(--color-border)'
+          }}
+          labelStyle={{ color: 'var(--color-accent)', fontWeight: 'bold' }}
+          formatter={(value) => {
+            const curLabel = currency === 'THB' ? 'บาท' : (currency || 'USD');
+            return typeof value === 'number' ? [`${value.toFixed(2)} ${curLabel}`, 'ราคาปิด'] : ['-', 'ราคาปิด'];
+          }}
+        />
+        <Line type="monotone" dataKey="close" stroke="var(--color-accent)" strokeWidth={2.5} dot={false} />
+        {/* จุดซื้อ */}
+        {Number.isFinite(buyPrice) && (
+          <ReferenceDot
+            x={data.find(d => Math.abs((d.close || 0) - buyPrice) < 1e-6)?.date}
+            y={buyPrice}
+            r={8}
+            fill="#4caf50"
+            stroke="#fff"
+            label="ซื้อ"
+          />
+        )}
+        {/* จุดขาย */}
+        {Number.isFinite(sellPrice) && (
+          <ReferenceDot
+            x={data.find(d => Math.abs((d.close || 0) - sellPrice) < 1e-6)?.date}
+            y={sellPrice}
+            r={8}
+            fill="#f7ca18"
+            stroke="#fff"
+            label="ขาย"
+          />
+        )}
+        {/* จุด Stop Loss */}
+        {Number.isFinite(stopLossPrice) && (
+          <ReferenceDot
+            x={data.find(d => Math.abs((d.close || 0) - stopLossPrice) < 1e-6)?.date}
+            y={stopLossPrice}
+            r={8}
+            fill="#d32f2f"
+            stroke="#fff"
+            label="SL"
+          />
+        )}
+      </LineChart>
+    </ResponsiveContainer>
+  );
 }

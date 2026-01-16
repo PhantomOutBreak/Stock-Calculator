@@ -1,5 +1,5 @@
 import React from 'react';
-import '../src/css/App.css'; // นำเข้า CSS หลักของแอป
+import './css/App.css'; // นำเข้า CSS หลักของแอป
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import AboutPage from './pages/CalculatorPage';
