@@ -29,7 +29,8 @@ import {
 } from 'recharts';
 import { chartMargin, renderCommonXAxis, commonTooltip, formatPriceTick, getPaddedDomain } from './common.jsx';
 
-export default function PriceChart({
+// React.memo to prevent re-renders when props don't change
+export default React.memo(function PriceChart({
   data = [], signals = [], smaSignals = [], goldenDeathSignals = [],
   goldenDeathZones = [], macdStrategySignals = [], highLowPeaks = [], fibonacci, syncId, height, padPct,
   wrapperClassName = '', currency = '', visible = {}
@@ -276,4 +277,4 @@ export default function PriceChart({
       </ResponsiveContainer>
     </div>
   );
-}
+});

@@ -48,6 +48,8 @@ import PriceChart from '../Component/Indicators/PriceChart';
 import VolumeChart from '../Component/Indicators/VolumeChart';
 import RsiChart from '../Component/Indicators/RsiChart';
 import MacdHistogramChart from '../Component/Indicators/MacdHistogramChart';
+import ZoomControls from '../Component/Indicators/ZoomControls';
+import VerticalScaleSlider from '../Component/Indicators/VerticalScaleSlider';
 
 // --- Helpers & Utilities (Section 1) ---
 const parseISODate = (iso) => {
@@ -578,9 +580,37 @@ export default function IndicatorsPage() {
   const abortRef = useRef(null);
   const [showIndicatorPanel, setShowIndicatorPanel] = useState(false);
 
-  const toggleIndicator = (key) => {
+  // =====================================================
+  // === Zoom & Pan State (TradingView-style Interaction) ===
+  // =====================================================
+  // zoomWindow: กำหนดช่วงข้อมูลที่จะแสดง (index-based)
+  //   - startIndex: index เริ่มต้นของข้อมูลที่จะแสดง
+  //   - endIndex: index สิ้นสุดของข้อมูลที่จะแสดง
+  // เมื่อ Zoom In: endIndex - startIndex จะน้อยลง (แคบลง)
+  // เมื่อ Zoom Out: endIndex - startIndex จะมากขึ้น (กว้างขึ้น)
+  const [zoomWindow, setZoomWindow] = useState({ startIndex: 0, endIndex: 100 });
+
+  // isDragging: ติดตามว่าผู้ใช้กำลังลากเมาส์อยู่หรือไม่ (สำหรับ Pan)
+  const [isDragging, setIsDragging] = useState(false);
+
+  // dragStartX: ตำแหน่ง X ที่เมาส์เริ่มต้นลาก
+  const dragStartX = useRef(0);
+
+  // zoomWindowRef: เก็บค่า zoomWindow ณ ตอนเริ่มลาก (ใช้คำนวณ delta)
+  const zoomWindowRef = useRef({ startIndex: 0, endIndex: 100 });
+
+  // chartContainerRef: อ้างอิง DOM element ของ container กราฟ
+  const chartContainerRef = useRef(null);
+
+  // Animation Frame Refs for Smooth Panning
+  const requestRef = useRef(null);
+  const lastMouseX = useRef(0);
+
+
+
+  const toggleIndicator = useCallback((key) => {
     setVisibleIndicators(prev => ({ ...prev, [key]: !prev[key] }));
-  };
+  }, []);
 
   const dateRangeInDays = calculateDateRangeInDays(startDate, endDate);
   const displayRangeInDays = calculateDateRangeInDays(displayRange.start, displayRange.end);
@@ -597,6 +627,274 @@ export default function IndicatorsPage() {
     if (!d) return '-';
     return d.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' });
   };
+
+  // =====================================================
+  // === Zoom & Pan Handlers ===
+  // =====================================================
+
+  /**
+   * handleWheel - จัดการการซูมและ Pan ด้วย Mouse Wheel
+   * @param {WheelEvent} e - event จากการ scroll wheel
+   * 
+   * การทำงาน (ปรับปรุงใหม่):
+   * - Scroll: Zoom (ซูมเข้า/ออก) โดยซูมไปที่ตำแหน่งเมาส์
+   * - Shift + Scroll: Pan (เลื่อนซ้าย-ขวา)
+   */
+  const handleWheel = useCallback((e) => {
+    e.preventDefault();
+    const dataLength = chartData.price?.length || 0;
+    if (dataLength === 0) return;
+
+    // === ค่าคงที่ ===
+    const MIN_WINDOW_SIZE = 10;  // ต้องแสดงอย่างน้อย 10 จุด
+    const ZOOM_SPEED = 0.1;      // ความเร็วซูม
+    const PAN_SPEED = 0.2;       // ความเร็ว Pan
+
+    // === คำนวณตำแหน่งเมาส์เทียบกับ container ===
+    const containerRect = chartContainerRef.current?.getBoundingClientRect();
+    const mouseXRatio = containerRect
+      ? (e.clientX - containerRect.left) / containerRect.width
+      : 0.5;
+
+    // ตรวจสอบว่าเป็นการ Pan หรือ Zoom
+    // ถ้านิ้วปัดซ้ายขวา (deltaX) หรือกด Shift -> Pan
+    const isPanning = Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey;
+
+    if (isPanning) {
+      // === PAN MODE ===
+      // delta > 0 (ขวา/ลง) -> เลื่อนไปทางขวา (ข้อมูลใหม่)
+      const direction = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) > 0 ? 1 : -1;
+
+      setZoomWindow(prev => {
+        const currentRange = prev.endIndex - prev.startIndex;
+        const panDelta = Math.max(1, Math.round(currentRange * PAN_SPEED));
+        const shift = panDelta * direction;
+
+        let newStart = prev.startIndex + shift;
+        let newEnd = prev.endIndex + shift;
+
+        // Clamp
+        if (newStart < 0) {
+          newStart = 0;
+          newEnd = currentRange;
+        }
+        if (newEnd > dataLength) {
+          newEnd = dataLength;
+          newStart = dataLength - currentRange;
+        }
+
+        newStart = Math.max(0, newStart);
+        newEnd = Math.min(dataLength, newEnd);
+
+        return { startIndex: newStart, endIndex: newEnd };
+      });
+    } else {
+      // === ZOOM MODE (Default Scroll) ===
+      const direction = e.deltaY > 0 ? 1 : -1; // +1 zoom out, -1 zoom in
+
+      setZoomWindow(prev => {
+        const currentRange = prev.endIndex - prev.startIndex;
+        const delta = Math.max(1, Math.round(currentRange * ZOOM_SPEED));
+
+        let newStart = prev.startIndex;
+        let newEnd = prev.endIndex;
+
+        if (direction < 0) {
+          // Zoom In
+          const leftDelta = Math.round(delta * mouseXRatio);
+          const rightDelta = delta - leftDelta;
+          newStart = prev.startIndex + leftDelta;
+          newEnd = prev.endIndex - rightDelta;
+
+          // Min Size Check
+          if (newEnd - newStart < MIN_WINDOW_SIZE) {
+            const center = Math.round((newStart + newEnd) / 2);
+            newStart = center - Math.floor(MIN_WINDOW_SIZE / 2);
+            newEnd = center + Math.ceil(MIN_WINDOW_SIZE / 2);
+          }
+        } else {
+          // Zoom Out
+          const leftDelta = Math.round(delta * mouseXRatio);
+          const rightDelta = delta - leftDelta;
+          newStart = prev.startIndex - leftDelta;
+          newEnd = prev.endIndex + rightDelta;
+        }
+
+        // Clamp
+        newStart = Math.max(0, newStart);
+        newEnd = Math.min(dataLength, newEnd);
+
+        // Adjust if hitting boundaries
+        if (newStart === 0 && newEnd - newStart < currentRange) {
+          // If hitting left but trying to zoom out/in, behavior depends, 
+          // usually we just clamp start and let end expand if zoom out
+          // But if zoom out, ensure we use up available space
+        }
+
+        // Ensure we don't exceed data limits
+        if (newEnd > dataLength) newEnd = dataLength;
+        if (newStart < 0) newStart = 0;
+
+        return { startIndex: newStart, endIndex: newEnd };
+      });
+    }
+  }, [chartData.price?.length]);
+
+  /**
+   * handleMouseDown - เริ่มการ Pan (ลากกราฟ)
+   * @param {MouseEvent} e
+   * 
+   * บันทึกตำแหน่งเริ่มต้นและค่า zoomWindow ปัจจุบัน
+   */
+  const handleMouseDown = useCallback((e) => {
+    // เฉพาะ left click (button 0)
+    if (e.button !== 0) return;
+    setIsDragging(true);
+    dragStartX.current = e.clientX;
+    zoomWindowRef.current = { ...zoomWindow };
+  }, [zoomWindow]);
+
+  /**
+   * handleMouseMove - ลากกราฟ (Pan) - ปรับปรุงให้เสถียรขึ้น
+   * @param {MouseEvent} e
+   * 
+   * ปรับปรุง:
+   * 1. Throttling: ใช้ requestAnimationFrame เพื่อลด re-render
+   * 2. Sensitivity: ปรับความไวให้เหมาะสม
+   * 3. Boundary protection: ป้องกันการลากเกินขอบ
+   */
+  /**
+   * updatePan - คำนวณและอัปเดตตำแหน่ง Pan ใน Animation Frame
+   */
+  const updatePan = useCallback(() => {
+    if (!isDragging) return;
+
+    const dataLength = chartData.price?.length || 0;
+    if (dataLength === 0) return;
+
+    // === คำนวณ Delta จากตำแหน่งเมาส์ล่าสุด ===
+    const deltaX = lastMouseX.current - dragStartX.current;
+
+    // ถ้าลากน้อยเกินไป ไม่ต้องทำอะไร (ลด jitter)
+    if (Math.abs(deltaX) < 3) {
+      requestRef.current = null;
+      return;
+    }
+
+    const containerWidth = chartContainerRef.current?.offsetWidth || 800;
+    const currentRange = zoomWindowRef.current.endIndex - zoomWindowRef.current.startIndex;
+
+    // === คำนวณ pixels per point ===
+    const pixelsPerPoint = containerWidth / Math.max(1, currentRange);
+
+    // === คำนวณ Index Shift (ปรับ sensitivity) ===
+    const sensitivity = 0.8;
+    const indexShift = Math.round((-deltaX / pixelsPerPoint) * sensitivity);
+
+    if (indexShift === 0) {
+      requestRef.current = null;
+      return;
+    }
+
+    let newStart = zoomWindowRef.current.startIndex + indexShift;
+    let newEnd = zoomWindowRef.current.endIndex + indexShift;
+
+    // === Clamp: ห้ามเลยขอบเขตข้อมูล ===
+    if (newStart < 0) {
+      const overflow = -newStart;
+      newStart = 0;
+      newEnd = Math.min(dataLength, newEnd - overflow + currentRange - (newEnd - overflow - newStart));
+      // Simpler: just shift end back proportionally
+      newEnd = newStart + currentRange;
+    }
+    if (newEnd > dataLength) {
+      const overflow = newEnd - dataLength;
+      newEnd = dataLength;
+      newStart = Math.max(0, newStart - overflow);
+    }
+
+    // === Final boundary check ===
+    newStart = Math.max(0, Math.min(dataLength - 1, newStart));
+    newEnd = Math.max(newStart + 1, Math.min(dataLength, newEnd));
+
+    setZoomWindow({ startIndex: newStart, endIndex: newEnd });
+    requestRef.current = null;
+  }, [isDragging, chartData.price?.length]);
+
+
+  /**
+   * handleMouseMove - ลากกราฟ (Pan) - ปรับปรุงด้วย requestAnimationFrame
+   */
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging) return;
+
+    // Update latest mouse position
+    lastMouseX.current = e.clientX;
+
+    // Request animation frame if not already requested
+    if (!requestRef.current) {
+      requestRef.current = requestAnimationFrame(updatePan);
+    }
+  }, [isDragging, updatePan]);
+
+  /**
+   * handleMouseUp - หยุด Pan
+   */
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    if (requestRef.current) {
+      cancelAnimationFrame(requestRef.current);
+      requestRef.current = null;
+    }
+  }, []);
+
+  /**
+   * handleResetZoom - รีเซ็ตกลับไปแสดงข้อมูลทั้งหมด
+   */
+  const handleResetZoom = useCallback(() => {
+    const dataLength = chartData.price?.length || 0;
+    setZoomWindow({ startIndex: 0, endIndex: dataLength });
+  }, [chartData.price?.length]);
+
+  // =====================================================
+  // === Sliced Data (ข้อมูลที่ถูกตัดตาม Zoom Window) ===
+  // =====================================================
+  // useMemo: คำนวณใหม่เฉพาะเมื่อ zoomWindow หรือ chartData เปลี่ยน
+  const slicedData = useMemo(() => {
+    const { startIndex, endIndex } = zoomWindow;
+    return {
+      price: chartData.price?.slice(startIndex, endIndex) || [],
+      volume: chartData.volume?.slice(startIndex, endIndex) || [],
+      rsi: chartData.rsi?.slice(
+        Math.max(0, startIndex - 14), // RSI ต้องการ 14 periods ก่อนหน้า
+        endIndex
+      ) || [],
+      macd: chartData.macd?.slice(
+        Math.max(0, startIndex - 26), // MACD ต้องการ 26 periods ก่อนหน้า
+        endIndex
+      ) || [],
+      // ข้อมูลอื่นๆ ที่ไม่ต้อง slice (เป็น markers หรือ static levels)
+      fibonacci: chartData.fibonacci,
+      rsiDivergences: chartData.rsiDivergences,
+      goldenDeathSignals: chartData.goldenDeathSignals,
+      goldenDeathZones: chartData.goldenDeathZones,
+      highLowPeaks: chartData.highLowPeaks,
+    };
+  }, [zoomWindow, chartData]);
+
+  // Effect: อัปเดต zoomWindow เมื่อโหลดข้อมูลใหม่
+  // ให้แสดงข้อมูลล่าสุด 50% หรือทั้งหมดถ้าน้อยกว่า 100 จุด
+  React.useEffect(() => {
+    const dataLength = chartData.price?.length || 0;
+    if (dataLength > 0) {
+      // แสดงข้อมูลล่าสุด 50% (หรือทั้งหมดถ้าน้อยกว่า 100)
+      const showPercent = dataLength > 100 ? 0.5 : 1;
+      const startIdx = Math.floor(dataLength * (1 - showPercent));
+      setZoomWindow({ startIndex: startIdx, endIndex: dataLength });
+    }
+  }, [chartData.price?.length]);
+
+
 
   const handleSubmit = useCallback(async (e) => {
     if (e) e.preventDefault();
@@ -879,61 +1177,25 @@ export default function IndicatorsPage() {
           </div>
 
           <div className="chart-controls">
-            <div className="control-group">
-              <label>
-                📏 ความสูงกราฟ: <strong>x{heightScale.toFixed(2)}</strong> (~{Math.round(priceHeight)}px)
-              </label>
-              <input
-                type="range"
-                min="0.7"
-                max="1.5"
-                step="0.05"
-                value={heightScale}
-                onChange={(e) => setHeightScale(parseFloat(e.target.value))}
-                className="height-slider"
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'flex-start',
+                alignItems: 'center',
+                gap: '1rem',
+              }}>
+              {/* New ZoomControls Component */}
+              <ZoomControls
+                totalItems={chartData.price?.length || 0}
+                visibleStart={zoomWindow.startIndex}
+                visibleEnd={zoomWindow.endIndex}
+                onZoomChange={(s, e) => setZoomWindow({ startIndex: s, endIndex: e })}
               />
             </div>
-            <div className="control-group">
-              <label>
-                ↔️ ความกว้าง: <strong>{widthPct}%</strong>
-              </label>
-              <input
-                type="range"
-                min="50"
-                max="100"
-                step="5"
-                value={widthPct}
-                onChange={(e) => setWidthPct(parseInt(e.target.value))}
-                className="height-slider"
-              />
-            </div>
-            <button
-              type="button"
-              className="primary-button reset-button"
-              onClick={() => {
-                setHeightScale(1.0);
-                setWidthPct(90);
-                setPricePadPct(0.06);
-              }}
-            >
-              🔄 รีเซ็ต
-            </button>
-          </div>
 
-          <div
-            className="charts-container"
-            style={{
-              width: `${widthPct}%`,
-              maxWidth: '100%',
-              margin: '0 auto',
-              transition: 'width 0.3s ease',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '2rem'
-            }}
-          >
             {/* --- Visibility Toggles (Collapsible Panel) --- */}
-            <div className="indicator-panel-wrapper">
+            <div className="indicator-panel-wrapper" style={{ marginLeft: 'auto' }}>
               <button
                 type="button"
                 onClick={() => setShowIndicatorPanel(prev => !prev)}
@@ -944,7 +1206,7 @@ export default function IndicatorsPage() {
               </button>
 
               {showIndicatorPanel && (
-                <div className="modern-panel">
+                <div className="modern-panel" style={{ right: 0, top: '100%', zIndex: 100 }}>
                   <div className="panel-section">
                     <div className="section-title">Overlays & Trend</div>
                     <div className="toggles-grid">
@@ -979,49 +1241,87 @@ export default function IndicatorsPage() {
                 </div>
               )}
             </div>
-
-            <PriceChart
-              data={chartData.price}
-              height={priceHeight}
-              padPct={pricePadPct}
-              currency={currency}
-              visible={visibleIndicators}
-              fibonacci={chartData.fibonacci}
-              signals={chartData.signals}
-              smaSignals={chartData.smaSignals}
-              goldenDeathSignals={chartData.goldenDeathSignals}
-              goldenDeathZones={chartData.goldenDeathZones}
-              macdStrategySignals={chartData.macdStrategySignals}
-              highLowPeaks={chartData.highLowPeaks}
-            />
-
-            {visibleIndicators.volume && (
-              <VolumeChart
-                data={chartData.volume}
-                height={volumeHeight}
-              />
-            )}
-
-            {visibleIndicators.rsi && (
-              <RsiChart
-                data={chartData.rsi}
-                divergences={chartData.rsiDivergences}
-                smoothingLabel={RSI_SETTINGS.smoothingType}
-                height={rsiHeight}
-              />
-            )}
-
-            {visibleIndicators.macd && (
-              <MacdHistogramChart
-                data={chartData.macd}
-                height={rsiHeight}
-              />
-            )}
           </div>
+
+          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', marginTop: '20px' }}>
+
+            {/* Main Chart Column */}
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+
+              <div
+                ref={chartContainerRef}
+                className="interactive-chart-area"
+                // === Event Handlers สำหรับ Zoom/Pan ===
+                // onWheel={handleWheel}  <-- REMOVED: ปิดการใช้ Scroll Mouse ตาม requirement
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                style={{
+                  width: '100%',
+                  cursor: isDragging ? 'grabbing' : 'text',
+                  userSelect: 'none'
+                }}
+              >
+                <PriceChart
+                  data={slicedData.price}
+                  height={priceHeight}
+                  padPct={pricePadPct}
+                  currency={currency}
+                  visible={visibleIndicators}
+                  fibonacci={slicedData.fibonacci}
+                  signals={chartData.signals}
+                  smaSignals={chartData.smaSignals}
+                  goldenDeathSignals={slicedData.goldenDeathSignals}
+                  goldenDeathZones={slicedData.goldenDeathZones}
+                  macdStrategySignals={chartData.macdStrategySignals}
+                  highLowPeaks={slicedData.highLowPeaks}
+                />
+
+                {visibleIndicators.volume && (
+                  <VolumeChart
+                    data={slicedData.volume}
+                    height={volumeHeight}
+                  />
+                )}
+
+                {visibleIndicators.rsi && (
+                  <RsiChart
+                    data={slicedData.rsi}
+                    divergences={slicedData.rsiDivergences}
+                    smoothingLabel={RSI_SETTINGS.smoothingType}
+                    height={rsiHeight}
+                  />
+                )}
+
+                {visibleIndicators.macd && (
+                  <MacdHistogramChart
+                    data={slicedData.macd}
+                    height={rsiHeight}
+                  />
+                )}
+              </div>
+
+              {/* ZoomControls already above, no navigator needed here */}
+
+            </div>
+
+            {/* Right Sidebar - Vertical Slider */}
+            <div style={{ width: '40px', marginLeft: '10px', display: 'flex', flexDirection: 'column' }}>
+              <VerticalScaleSlider
+                scale={heightScale}
+                onChange={setHeightScale}
+                min={0.5}
+                max={2.5}
+              />
+            </div>
+
+          </div>
+
         </div>
       )}
 
       <Link to="/" className="primary-button back-button">← กลับสู่หน้าหลัก</Link>
-    </div>
+    </div >
   );
 }

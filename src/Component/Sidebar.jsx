@@ -44,7 +44,7 @@ function Sidebar({ isOpen, onClose }) {
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
         {/* ส่วนหัวของ Sidebar */}
         <div className="sidebar-header">
-          <div className="sidebar-logo">Stock Calculator</div>
+          <div className="sidebar-logo">Stock Analytics</div>
           {/* ปุ่มปิดแสดงทุกอุปกรณ์ (ใน Mobile) */}
           <button
             className="close-button"

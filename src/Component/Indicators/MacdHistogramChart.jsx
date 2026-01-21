@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { ResponsiveContainer, ComposedChart, CartesianGrid, YAxis, ReferenceLine, Bar, Cell } from 'recharts';
 import { renderCommonXAxis, commonTooltip } from './common.jsx';
 
-export default function MacdHistogramChart({ data = [], syncId, height, wrapperClassName = '', currency = '' }) {
+// React.memo for performance
+export default React.memo(function MacdHistogramChart({ data = [], syncId, height, wrapperClassName = '', currency = '' }) {
   const chartRows = Array.isArray(data) ? data : [];
   const values = useMemo(() => chartRows.map(d => d.histogram).filter(v => Number.isFinite(v)), [chartRows]);
   const absMax = values.length ? Math.max(...values.map(v => Math.abs(v))) : 1;
@@ -36,4 +37,4 @@ export default function MacdHistogramChart({ data = [], syncId, height, wrapperC
       </ResponsiveContainer>
     </div>
   );
-}
+});

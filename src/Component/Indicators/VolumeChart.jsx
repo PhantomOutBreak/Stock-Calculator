@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { ResponsiveContainer, ComposedChart, CartesianGrid, Bar, YAxis, Cell } from 'recharts';
 import { renderCommonXAxis, commonTooltip } from './common.jsx';
 
-export default function VolumeChart({ data = [], syncId, height, wrapperClassName = '', currency = '' }) {
+// React.memo for performance
+export default React.memo(function VolumeChart({ data = [], syncId, height, wrapperClassName = '', currency = '' }) {
   const wrapperClasses = ['chart-wrapper', wrapperClassName].filter(Boolean).join(' ');
   const cells = useMemo(() => (data || []).map((e, i) => <Cell key={i} fill={e.isUp ? 'var(--color-success)' : '#d32f2f'} />), [data]);
 
@@ -24,4 +25,4 @@ export default function VolumeChart({ data = [], syncId, height, wrapperClassNam
       </ResponsiveContainer>
     </div>
   );
-}
+});

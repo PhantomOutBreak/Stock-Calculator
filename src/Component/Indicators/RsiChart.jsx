@@ -24,7 +24,8 @@ import React, { useMemo } from 'react';
 import { ResponsiveContainer, ComposedChart, Line, ReferenceArea, YAxis, CartesianGrid } from 'recharts';
 import { renderCommonXAxis, commonTooltip } from './common';
 
-export default function RsiChart({ data = [], signals = [], divergences = [], smoothingLabel, syncId, height, wrapperClassName = '', currency = '' }) {
+// React.memo for performance
+export default React.memo(function RsiChart({ data = [], signals = [], divergences = [], smoothingLabel, syncId, height, wrapperClassName = '', currency = '' }) {
   const hasSmoothing = useMemo(() => Array.isArray(data) && data.some(d => Number.isFinite(d.smoothing)), [data]);
   const hasBands = useMemo(() => Array.isArray(data) && data.some(d => Number.isFinite(d.smoothingUpper) && Number.isFinite(d.smoothingLower)), [data]);
   const smoothingName = smoothingLabel ? `RSI ${smoothingLabel}` : 'RSI MA';
@@ -83,4 +84,4 @@ export default function RsiChart({ data = [], signals = [], divergences = [], sm
       </ResponsiveContainer>
     </div>
   );
-}
+});
