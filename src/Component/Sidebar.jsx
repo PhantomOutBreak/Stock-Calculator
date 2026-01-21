@@ -80,7 +80,7 @@ function Sidebar({ isOpen, onClose }) {
         </nav>
         {/* ส่วนท้าย */}
         <div className="sidebar-footer" style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 'auto' }}>
-          <p style={{ fontSize: '0.8rem', color: '#64748b', textAlign: 'center' }}>Version 1.5</p>
+          <p style={{ fontSize: '0.8rem', color: '#64748b', textAlign: 'center' }}>Version 1.5.1</p>
         </div>
       </aside>
     </>
