@@ -1,11 +1,11 @@
-# 📈 Stock Calculator & Analytics Platform
+# 📈 Stock Analytics Platform
 
-[![Version](https://img.shields.io/badge/version-1.5-blue.svg)](https://github.com/PhantomOutBreak/Stock-Calculator/releases)
+[![Version](https://img.shields.io/badge/version-1.6-blue.svg)](https://github.com/PhantomOutBreak/Stock-Calculator/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/react-19-61DAFB.svg)](https://react.dev/)
 
-**Stock Calculator** is a comprehensive web application for stock traders and investors. It combines a powerful trading calculator (Buy/Sell/Stop Loss) with technical analysis tools (Indicators) and deep dividend history analytics.
+**Stock Analytics** is a comprehensive web application for stock traders and investors. It combines a powerful trading calculator (Buy/Sell/Stop Loss) with technical analysis tools (Indicators) and deep dividend history analytics.
 
 🌏 Designed for the **Thai market (SET)** and **US Stocks (Wall St.)**, supporting automatic currency detection (THB/USD).
 
@@ -205,6 +205,26 @@ Contributions are welcome! Please follow these steps:
 ---
 
 ## 📋 Changelog
+
+### v1.6 (2026-01-26) - **"Stock Analytics" Rebrand & Performance Update**
+- 🎨 **Rebranding**: Renamed from "Stock Calculator" to "Stock Analytics"
+- ⚡ **Performance Optimizations**:
+  - Implemented `React.memo` for all indicator chart components
+  - Added `requestAnimationFrame` throttling for smooth chart panning
+  - Optimized callback stability with `useCallback`
+- 🎯 **UI/UX Enhancements**:
+  - Redesigned Indicator Panel with premium glassmorphism design
+  - Added iOS-style toggle switches with neon glow effects
+  - Fixed layout stretching issue (panel now absolutely positioned)
+  - Improved indicator categorization (Trends, Key Levels, Oscillators)
+- 📅 **Date Range Logic Improvements**:
+  - Extended all preset ranges (1m, 3m, 6m, 1y, 5y) to ensure sufficient trading days
+  - Added weekend filtering (Saturday/Sunday exclusion)
+  - Compensates for holidays and non-trading days automatically
+- 🔧 **Technical Improvements**:
+  - Enhanced zoom controls stability
+  - Improved chart rendering performance
+  - Better state management for interactive charts
 
 ### v1.5 (2026-01-16)
 - ✅ Added Technical Indicators (RSI, MACD, Volume charts)

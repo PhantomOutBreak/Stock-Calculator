@@ -1206,36 +1206,75 @@ export default function IndicatorsPage() {
               </button>
 
               {showIndicatorPanel && (
-                <div className="modern-panel" style={{ right: 0, top: '100%', zIndex: 100 }}>
+                <div className="modern-panel">
                   <div className="panel-section">
-                    <div className="section-title">Overlays & Trend</div>
+                    <div className="section-title">📉 Trend & Overlays</div>
                     <div className="toggles-grid">
-                      {['sma', 'ema', 'bb', 'fib', 'goldenDeath', 'weeklyHighLow', 'monthlyHighLow', 'yearlyHighLow'].map(key => (
-                        <div
-                          key={key}
-                          className={`toggle-card ${visibleIndicators[key] ? 'active' : ''}`}
-                          onClick={() => toggleIndicator(key)}
-                        >
-                          <span className="toggle-label">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                          <div className="switch" />
-                        </div>
-                      ))}
+                      {['sma', 'ema', 'bb', 'goldenDeath'].map(key => {
+                        const labels = {
+                          sma: 'SMA (Moving Avg)',
+                          ema: 'EMA (Exp Avg)',
+                          bb: 'Bollinger Bands',
+                          goldenDeath: 'Golden/Death Cross'
+                        };
+                        return (
+                          <div
+                            key={key}
+                            className={`toggle-card ${visibleIndicators[key] ? 'active' : ''}`}
+                            onClick={() => toggleIndicator(key)}
+                          >
+                            <span className="toggle-label">{labels[key]}</span>
+                            <div className="switch" />
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
                   <div className="panel-section">
-                    <div className="section-title">Oscillators & Volume</div>
+                    <div className="section-title">🎯 Key Levels & Fib</div>
                     <div className="toggles-grid">
-                      {['volume', 'rsi', 'macd'].map(key => (
-                        <div
-                          key={key}
-                          className={`toggle-card ${visibleIndicators[key] ? 'active' : ''}`}
-                          onClick={() => toggleIndicator(key)}
-                        >
-                          <span className="toggle-label">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
-                          <div className="switch" />
-                        </div>
-                      ))}
+                      {['fib', 'weeklyHighLow', 'monthlyHighLow', 'yearlyHighLow'].map(key => {
+                        const labels = {
+                          fib: 'Fibonacci Levels',
+                          weeklyHighLow: 'Weekly High/Low',
+                          monthlyHighLow: 'Monthly High/Low',
+                          yearlyHighLow: 'Yearly High/Low'
+                        };
+                        return (
+                          <div
+                            key={key}
+                            className={`toggle-card ${visibleIndicators[key] ? 'active' : ''}`}
+                            onClick={() => toggleIndicator(key)}
+                          >
+                            <span className="toggle-label">{labels[key]}</span>
+                            <div className="switch" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="panel-section">
+                    <div className="section-title">📊 Oscillators & Vol</div>
+                    <div className="toggles-grid">
+                      {['volume', 'rsi', 'macd'].map(key => {
+                        const labels = {
+                          volume: 'Volume Bars',
+                          rsi: 'RSI (Relative Str)',
+                          macd: 'MACD Momentum'
+                        };
+                        return (
+                          <div
+                            key={key}
+                            className={`toggle-card ${visibleIndicators[key] ? 'active' : ''}`}
+                            onClick={() => toggleIndicator(key)}
+                          >
+                            <span className="toggle-label">{labels[key]}</span>
+                            <div className="switch" />
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

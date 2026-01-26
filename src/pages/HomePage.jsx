@@ -140,8 +140,16 @@ function HomePage() {
         throw new Error('ไม่พบข้อมูลในช่วงเวลาที่ระบุ');
       }
 
+      // กรองวันเสาร์-อาทิตย์ออก (0 = Sunday, 6 = Saturday)
+      // Filter logic: รับเฉพาะวันที่ไม่ใช่เสาร์ (6) และอาทิตย์ (0)
+      const workingDaysOnly = rawHistory.filter(item => {
+        const dateObj = new Date(item.date);
+        const day = dateObj.getDay();
+        return day !== 0 && day !== 6;
+      });
+
       // Transform Data (Format Date for Chart/Table)
-      const formattedData = rawHistory.map(row => ({
+      const formattedData = workingDaysOnly.map(row => ({
         ...row,
         // เก็บ date เดิมไว้สำหรับ sort/filter ถ้าจำเป็น แต่แสดงผลด้วย formatted string
         displayDate: formatDisplayDate(row.date),
@@ -169,7 +177,7 @@ function HomePage() {
   return (
     <div className="page-container">
       <header className="page-header">
-        <h1>Stock Price Checker</h1>
+        <h1>Stock Analytics</h1>
         <p className="page-subtitle">
           ตรวจสอบราคาปิดย้อนหลังและวิเคราะห์แนวโน้มหุ้นไทย/ต่างประเทศ ได้ง่ายๆ เพียงปลายนิ้ว
         </p>

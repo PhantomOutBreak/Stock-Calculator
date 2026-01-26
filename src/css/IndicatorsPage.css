@@ -25,6 +25,7 @@
       #00d4ff 75%,
       #cbd5e1);
   background-size: 200% auto;
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: shine 5s linear infinite;
@@ -50,6 +51,7 @@
       #00d4ff 75%,
       #cbd5e1);
   background-size: 200% auto;
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: shine 5s linear infinite;
@@ -329,6 +331,7 @@
 
 /* Custom Range Input */
 input[type="range"] {
+  appearance: none;
   -webkit-appearance: none;
   height: 4px;
   background: rgba(255, 255, 255, 0.1);
@@ -359,6 +362,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   background: linear-gradient(90deg, #6366f1, #22d3ee);
   border-radius: 3px;
   outline: none;
+  appearance: none;
   -webkit-appearance: none;
 }
 
@@ -505,27 +509,38 @@ input[type="range"]::-webkit-slider-thumb:hover {
 /* =========================================
    3. MODERN INDICATOR PANEL
    ========================================= */
+/* Wrapper for relative positioning anchor */
+.indicator-panel-wrapper {
+  position: relative;
+  z-index: 50;
+}
+
 .modern-panel {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 100;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
+  border-radius: 24px;
   padding: 1.5rem;
   margin-top: 1rem;
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
-  animation: slideDown 0.3s ease-out;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
+  animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 320px;
 }
 
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-10px) scale(0.98);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -555,51 +570,58 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 /* Modern Toggle Switch Card */
+/* Modern Toggle Switch Card */
 .toggle-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.03);
+  padding: 0.85rem 1rem;
+  background: rgba(30, 41, 59, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
+  border-radius: 16px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
+  position: relative;
+  overflow: hidden;
 }
 
 .toggle-card:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(30, 41, 59, 0.7);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .toggle-card.active {
-  background: rgba(34, 211, 238, 0.1);
-  border-color: rgba(34, 211, 238, 0.3);
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.15);
 }
 
 .toggle-label {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #cbd5e1;
-  text-transform: capitalize;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.02em;
+  transition: color 0.3s ease;
 }
 
 .toggle-card.active .toggle-label {
-  color: #fff;
-  text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+  color: #22d3ee;
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.4);
 }
 
-/* iOS-style Switch */
+/* iOS-style High-End Switch */
 .switch {
   position: relative;
-  width: 36px;
-  height: 20px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  transition: all 0.3s ease;
+  width: 44px;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 99px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .switch::after {
@@ -607,21 +629,29 @@ input[type="range"]::-webkit-slider-thumb:hover {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 16px;
-  height: 16px;
-  background: #cbd5e1;
+  width: 18px;
+  height: 18px;
+  background: #94a3b8;
   border-radius: 50%;
-  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-card:hover .switch::after {
+  background: #fff;
+  transform: scale(1.1);
 }
 
 .toggle-card.active .switch {
-  background: var(--neon-cyan);
+  background: rgba(34, 211, 238, 0.2);
+  border-color: rgba(34, 211, 238, 0.6);
+  box-shadow: inset 0 0 8px rgba(34, 211, 238, 0.2);
 }
 
 .toggle-card.active .switch::after {
-  transform: translateX(16px);
-  background: #fff;
+  transform: translateX(20px);
+  background: #22d3ee;
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
 }
 
 /* Panel Header Button */

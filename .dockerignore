@@ -1,7 +1,0 @@
-//// filepath: .dockerignore
-node_modules
-dist
-Backend/public
-.vscode
-.env
-.git

@@ -44,22 +44,26 @@ const PRESET_RANGES = [
   {
     id: '5d',
     label: '5 วัน',
-    getRange: () => buildRange(end => shiftByDays(end, -5))
+    // 5 Days: shift -8 days to ensure at least 5 trading days
+    getRange: () => buildRange(end => shiftByDays(end, -8))
   },
   {
     id: '1m',
     label: '1 เดือน',
-    getRange: () => buildRange(end => shiftByMonths(end, -1))
+    // 1 Month: shift -45 days to ensure ~30 trading days (accounting for weekends/holidays)
+    getRange: () => buildRange(end => shiftByDays(end, -45))
   },
   {
     id: '3m',
     label: '3 เดือน',
-    getRange: () => buildRange(end => shiftByMonths(end, -3))
+    // 3 Months: shift -135 days (approx 4.5 months) to ensure ~90 trading days
+    getRange: () => buildRange(end => shiftByDays(end, -135))
   },
   {
     id: '6m',
     label: '6 เดือน',
-    getRange: () => buildRange(end => shiftByMonths(end, -6))
+    // 6 Months: shift -270 days (approx 9 months) to ensure ~180 trading days
+    getRange: () => buildRange(end => shiftByDays(end, -270))
   },
   {
     id: 'ytd',
@@ -76,12 +80,14 @@ const PRESET_RANGES = [
   {
     id: '1y',
     label: '1 ปี',
-    getRange: () => buildRange(end => shiftByYears(end, -1))
+    // 1 Year: shift -550 days (approx 1.5 years) to ensure ~250 trading days
+    getRange: () => buildRange(end => shiftByDays(end, -550))
   },
   {
     id: '5y',
     label: '5 ปี',
-    getRange: () => buildRange(end => shiftByYears(end, -5))
+    // 5 Years: shift -2700 days (approx 7.5 years) to ensure ~1250 trading days
+    getRange: () => buildRange(end => shiftByDays(end, -2700))
   }
 ];
 
