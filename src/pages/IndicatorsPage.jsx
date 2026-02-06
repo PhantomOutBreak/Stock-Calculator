@@ -45,6 +45,7 @@ import {
 import '../css/IndicatorsPage.css';
 import { apiFetch } from '../utils/api';
 import PriceChart from '../Component/Indicators/PriceChart';
+import LightweightPriceChart from '../Component/Indicators/LightweightPriceChart';
 import VolumeChart from '../Component/Indicators/VolumeChart';
 import RsiChart from '../Component/Indicators/RsiChart';
 import MacdHistogramChart from '../Component/Indicators/MacdHistogramChart';
@@ -579,6 +580,8 @@ export default function IndicatorsPage() {
   });
   const abortRef = useRef(null);
   const [showIndicatorPanel, setShowIndicatorPanel] = useState(false);
+  // Toggle ระหว่าง Recharts กับ TradingView (Lightweight Charts)
+  const [useTradingViewChart, setUseTradingViewChart] = useState(false);
 
   // =====================================================
   // === Zoom & Pan State (TradingView-style Interaction) ===
@@ -1192,6 +1195,21 @@ export default function IndicatorsPage() {
                 visibleEnd={zoomWindow.endIndex}
                 onZoomChange={(s, e) => setZoomWindow({ startIndex: s, endIndex: e })}
               />
+
+              {/* Chart Engine Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setUseTradingViewChart(prev => !prev)}
+                className={`range-button ${useTradingViewChart ? 'active' : ''}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontWeight: 600
+                }}
+              >
+                {useTradingViewChart ? '📊 TradingView' : '📈 Recharts'}
+              </button>
             </div>
 
             {/* --- Visibility Toggles (Collapsible Panel) --- */}
@@ -1291,31 +1309,43 @@ export default function IndicatorsPage() {
                 ref={chartContainerRef}
                 className="interactive-chart-area"
                 // === Event Handlers สำหรับ Zoom/Pan ===
-                // onWheel={handleWheel}  <-- REMOVED: ปิดการใช้ Scroll Mouse ตาม requirement
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
+                // Disable mouse events when using TradingView (it has built-in pan/zoom)
+                onMouseDown={useTradingViewChart ? undefined : handleMouseDown}
+                onMouseMove={useTradingViewChart ? undefined : handleMouseMove}
+                onMouseUp={useTradingViewChart ? undefined : handleMouseUp}
+                onMouseLeave={useTradingViewChart ? undefined : handleMouseUp}
                 style={{
                   width: '100%',
-                  cursor: isDragging ? 'grabbing' : 'text',
+                  cursor: useTradingViewChart ? 'default' : (isDragging ? 'grabbing' : 'text'),
                   userSelect: 'none'
                 }}
               >
-                <PriceChart
-                  data={slicedData.price}
-                  height={priceHeight}
-                  padPct={pricePadPct}
-                  currency={currency}
-                  visible={visibleIndicators}
-                  fibonacci={slicedData.fibonacci}
-                  signals={chartData.signals}
-                  smaSignals={chartData.smaSignals}
-                  goldenDeathSignals={slicedData.goldenDeathSignals}
-                  goldenDeathZones={slicedData.goldenDeathZones}
-                  macdStrategySignals={chartData.macdStrategySignals}
-                  highLowPeaks={slicedData.highLowPeaks}
-                />
+                {/* Chart Type Toggle: Recharts vs TradingView */}
+                {useTradingViewChart ? (
+                  <LightweightPriceChart
+                    data={chartData.price}  // ส่ง full data - Lightweight Charts จัดการ pan/zoom เอง
+                    height={priceHeight}
+                    visible={visibleIndicators}
+                    fibonacci={chartData.fibonacci}
+                    goldenDeathSignals={chartData.goldenDeathSignals}
+                    highLowPeaks={chartData.highLowPeaks}
+                  />
+                ) : (
+                  <PriceChart
+                    data={slicedData.price}
+                    height={priceHeight}
+                    padPct={pricePadPct}
+                    currency={currency}
+                    visible={visibleIndicators}
+                    fibonacci={slicedData.fibonacci}
+                    signals={chartData.signals}
+                    smaSignals={chartData.smaSignals}
+                    goldenDeathSignals={slicedData.goldenDeathSignals}
+                    goldenDeathZones={slicedData.goldenDeathZones}
+                    macdStrategySignals={chartData.macdStrategySignals}
+                    highLowPeaks={slicedData.highLowPeaks}
+                  />
+                )}
 
                 {visibleIndicators.volume && (
                   <VolumeChart
